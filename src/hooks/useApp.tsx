@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { ActivityItem, AppState, MemoryEvent, Notif, Profile, QuizAttempt, StudySession } from "@/types";
 import { DEMO_EMAIL, DEMO_PASSWORD, STORAGE_KEY, clearedLearning, createSeed } from "@/data/seed";
 import { addDays, sha256, todayStr, uid } from "@/utils";
+import { saveStudentStateToFirebase, getStudentStateFromFirebase } from "@/services/firebase/database";
 
 interface Account { email: string; hash: string; profile: Profile }
 export interface SignupInput { name: string; email: string; password: string; department: string; year: string; institution: string; goals: string }
@@ -59,6 +60,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* quota exceeded */ }
+    if (state.session?.email) {
+      saveStudentStateToFirebase(state).catch((e) => {
+        console.warn("Failed to sync to Firebase:", e);
+      });
+    }
   }, [state, ready]);
 
   useEffect(() => {

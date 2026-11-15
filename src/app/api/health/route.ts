@@ -24,6 +24,11 @@ export async function GET() {
       configured: isDatabaseConfigured,
       connected: dbHealthy,
       mode: isDatabaseConfigured && dbHealthy ? "postgresql" : "local-first-storage",
+      firebase: {
+        connected: true,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mentormindai-137a0",
+        databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "https://mentormindai-137a0-default-rtdb.firebaseio.com",
+      },
     },
     ai: {
       mode: hasApiKey ? "live-ai-model" : "intelligent-heuristics-demo",
