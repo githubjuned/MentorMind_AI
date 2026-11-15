@@ -4,11 +4,12 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "build:export": "node scripts/build-export.js",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "deploy": "firebase deploy",
-    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy": "npm run build:export && firebase deploy --only hosting,database",
+    "deploy:hosting": "npm run build:export && firebase deploy --only hosting",
     "deploy:database": "firebase deploy --only database"
   },
   "dependencies": {
