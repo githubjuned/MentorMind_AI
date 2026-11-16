@@ -1,9 +1,9 @@
 {
   "rules": {
     "students": {
-      "$studentId": {
-        ".read": "auth != null || $studentId == 'demo-student'",
-        ".write": "auth != null || $studentId == 'demo-student'"
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
       }
     }
   }
