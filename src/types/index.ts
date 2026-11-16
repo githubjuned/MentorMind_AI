@@ -256,6 +256,7 @@ export interface AppState {
   session: { email: string; uid?: string; photoURL?: string } | null;
   onboarded: boolean;
   isSample: boolean;
+  tourCompleted?: boolean;
   profile: Profile;
   settings: Settings;
   subjects: Subject[];

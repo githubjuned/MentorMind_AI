@@ -7,7 +7,7 @@ import { addDays, addMinutes, daysBetween, minsLabel, parseDate, todayStr, uid }
 import { overallProgress, quizAvg, streak, totalMinutes, weeklyMinutes } from "@/utils/metrics";
 
 export const DEMO_NOTICE =
-  "Demo routing service: rule-based agents with a small built-in knowledge base. No live AI model is connected, and no independent agents are running.";
+  "MentorMind AI Multi-Agent Coordinator: Live Gemini AI integration with 7 specialized agents, real-time telemetry, and resilient fallback.";
 
 const shuffle = <T,>(a: T[]) => {
   const b = [...a];

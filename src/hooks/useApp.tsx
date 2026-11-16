@@ -27,11 +27,9 @@ interface Ctx {
   notify: (kind: Notif["kind"], title: string, body: string, href?: string) => void;
   login: (email: string, password: string, remember: boolean) => Promise<Result>;
   loginGoogle: () => Promise<Result>;
-  loginDemo: () => void;
   signup: (d: SignupInput) => Promise<Result>;
   resetPassword: (email: string, password?: string) => Promise<Result>;
   logout: () => void;
-  resetDemo: () => void;
   clearProfile: () => void;
   toggleTask: (id: string) => void;
   finishQuiz: (a: QuizAttempt) => void;
@@ -136,15 +134,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem("mm-alive", "1");
   };
 
-  const loginDemo = useCallback(() => {
-    startSession(true);
-    const seed = createSeed();
-    setState((s) => ({ ...seed, settings: { ...seed.settings, theme: s.settings.theme }, session: { email: DEMO_EMAIL } }));
-  }, []);
-
   const login: Ctx["login"] = useCallback(async (email, password, remember) => {
     const e = email.trim().toLowerCase();
-    if (e === DEMO_EMAIL && password === DEMO_PASSWORD) { loginDemo(); return { ok: true }; }
     startSession(remember);
 
     // 1. Try Firebase Email/Password Sign-In
@@ -153,8 +144,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const u = fbRes.user;
       const remote = await getStudentStateFromFirebase(u.uid, e);
       setState((s) => {
-        const seed = createSeed();
-        const base = remote ? { ...seed, ...remote } : { ...seed, profile: { ...seed.profile, email: e, name: u.displayName || s.profile.name } };
+        const seed = createSeed(u.displayName || s.profile.name || "Student", e);
+        const base = remote ? { ...seed, ...remote } : seed;
         return {
           ...base,
           onboarded: true,
@@ -170,14 +161,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (acc && acc.hash === (await sha256(password))) {
       setState((s) => {
         if (s.profile.email.toLowerCase() === e) return { ...s, session: { email: e } };
-        const seed = createSeed();
+        const seed = createSeed(acc.profile.name, e);
         return { ...seed, profile: acc.profile, onboarded: true, session: { email: e } };
       });
       return { ok: true };
     }
 
     return { ok: false, error: fbRes.error || "Incorrect email or password." };
-  }, [loginDemo]);
+  }, []);
 
   const loginGoogle: Ctx["loginGoogle"] = useCallback(async () => {
     startSession(true);
@@ -191,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const remote = await getStudentStateFromFirebase(u.uid, e);
 
     setState((s) => {
-      const seed = createSeed();
+      const seed = createSeed(u.displayName || "Student", e);
       const base = remote ? { ...seed, ...remote } : seed;
       const profile: Profile = {
         ...base.profile,
@@ -203,7 +194,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newState: AppState = {
         ...base,
         profile,
-        onboarded: remote ? base.onboarded : true,
+        onboarded: true,
         session: { email: e, uid: u.uid, photoURL: u.photoURL || undefined },
       };
 
@@ -226,7 +217,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     const uidStr = fbRes.user?.uid;
-    const seed = createSeed();
+    const seed = createSeed(d.name.trim(), e);
     const profile: Profile = {
       ...seed.profile,
       name: d.name.trim(),
@@ -240,15 +231,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newState: AppState = {
       ...seed,
       profile,
-      onboarded: false,
+      onboarded: true,
+      tourCompleted: false,
       session: { email: e, uid: uidStr },
       memory: [
         {
           id: uid(),
           date: todayStr(),
           kind: "stored",
-          title: "Profile created",
-          detail: "Account created and synced to Firebase.",
+          title: "Profile initialized",
+          detail: "Account created and synchronized to Firebase.",
         },
       ],
     };
@@ -287,7 +279,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, session: null }));
   }, []);
 
-  const resetDemo = useCallback(() => setState((s) => ({ ...createSeed(), profile: { ...createSeed().profile, ...s.profile }, settings: s.settings, session: s.session, onboarded: s.onboarded })), []);
   const clearProfile = useCallback(() => setState((s) => clearedLearning(s)), []);
 
   const toggleTask: Ctx["toggleTask"] = useCallback((id) => update((s) => {
@@ -376,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [update]);
 
   return (
-    <AppCtx.Provider value={{ state, ready, update, addActivity, addSession, addMemory, notify, login, loginGoogle, loginDemo, signup, resetPassword, logout, resetDemo, clearProfile, toggleTask, finishQuiz, addRevision, completeRevision }}>
+    <AppCtx.Provider value={{ state, ready, update, addActivity, addSession, addMemory, notify, login, loginGoogle, signup, resetPassword, logout, clearProfile, toggleTask, finishQuiz, addRevision, completeRevision }}>
       {children}
     </AppCtx.Provider>
   );

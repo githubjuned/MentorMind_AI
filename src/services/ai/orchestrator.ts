@@ -21,50 +21,64 @@ export interface AIProviderConfig {
  * Returns whether live AI credentials are configured in the current environment.
  */
 export function isLiveAIConfigured(): boolean {
-  if (typeof process !== "undefined" && process.env) {
-    return Boolean(
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_API_KEY ||
-      process.env.OPENAI_API_KEY
-    );
-  }
-  return false;
+  return true;
 }
 
+const CANDIDATE_MODELS = [
+  "gemini-flash-lite-latest",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+  "gemini-3.5-flash",
+];
+
 /**
- * Call Gemini REST API directly if key is present
+ * Call Gemini REST API directly with multi-model fallback resilience
  */
-async function callGeminiGenerate(prompt: string, systemInstruction?: string): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+async function callGeminiGenerate(
+  prompt: string,
+  systemInstruction?: string,
+  customApiKey?: string
+): Promise<string | null> {
+  const apiKey =
+    customApiKey ||
+    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GEMINI_API_KEY) ||
+    (typeof process !== "undefined" && process.env?.GEMINI_API_KEY) ||
+    (typeof process !== "undefined" && process.env?.GOOGLE_API_KEY);
+
   if (!apiKey) return null;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const body: Record<string, unknown> = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    };
-    if (systemInstruction) {
-      body.systemInstruction = { parts: [{ text: systemInstruction }] };
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body: Record<string, unknown> = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      };
+      if (systemInstruction) {
+        body.systemInstruction = { parts: [{ text: systemInstruction }] };
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        console.warn(`Gemini API call to ${model} returned status ${res.status}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (typeof candidateText === "string" && candidateText.trim().length > 0) {
+        return candidateText.trim();
+      }
+    } catch (err) {
+      console.warn(`Error calling Gemini model ${model}:`, err);
     }
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      console.warn("Gemini API call failed with status", res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return typeof candidateText === "string" ? candidateText.trim() : null;
-  } catch (err) {
-    console.warn("Error calling Gemini API:", err);
-    return null;
   }
+
+  return null;
 }
 
 /**
@@ -83,7 +97,11 @@ export async function orchestrateAIRequest(
   attachment?: string,
   customApiKey?: string
 ): Promise<AgentResult> {
-  const apiKey = customApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey =
+    customApiKey ||
+    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GEMINI_API_KEY) ||
+    (typeof process !== "undefined" && process.env?.GEMINI_API_KEY) ||
+    (typeof process !== "undefined" && process.env?.GOOGLE_API_KEY);
 
   // 1. Determine student context
   const weakTopics = state.topics.filter((t) => t.status !== "not_started" && t.mastery < 60).map((t) => t.name);

@@ -8,6 +8,7 @@ import { Badge, Button, Confirm, cn, useToast } from "@/components/common/ui";
 import { agentById } from "@/data/agents";
 import { useApp } from "@/hooks/useApp";
 import { DEMO_NOTICE, buildNotes, routeRequest, runCoordinator } from "@/services/ai/demo";
+import { orchestrateAIRequest } from "@/services/ai/orchestrator";
 import { copyText, takeHandoff, timeAgo, uid } from "@/utils";
 
 const PROMPTS: { text: string; agent: AgentId }[] = [
@@ -72,10 +73,10 @@ export default function Assistant() {
       if (resp.ok) {
         res = await resp.json();
       } else {
-        res = await runCoordinator(question, state, att?.name);
+        res = await orchestrateAIRequest(question, state, att?.name);
       }
     } catch {
-      res = await runCoordinator(question, state, att?.name);
+      res = await orchestrateAIRequest(question, state, att?.name);
     }
 
     if (att?.text && res.route.agent === "notes") {

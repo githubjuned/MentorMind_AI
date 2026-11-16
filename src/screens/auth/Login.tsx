@@ -2,12 +2,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, KeyRound, Loader2, Mail, PlayCircle } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2, Mail } from "lucide-react";
 import { AuthShell } from "@/components/forms/AuthShell";
 import { Button, Field, Modal, useToast } from "@/components/common/ui";
 import { GoogleIcon } from "@/components/common/GoogleIcon";
 import { useApp } from "@/hooks/useApp";
-import { DEMO_EMAIL, DEMO_PASSWORD } from "@/data/seed";
 import { cn } from "@/utils";
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -16,7 +15,7 @@ const EMAIL_MAX = 25;
 const PASSWORD_MAX = 8;
 
 export default function Login() {
-  const { login, loginGoogle, loginDemo, resetPassword } = useApp();
+  const { login, loginGoogle, resetPassword } = useApp();
   const router = useRouter();
   const toast = useToast();
   const [email, setEmail] = useState("");
@@ -104,12 +103,6 @@ export default function Login() {
       return;
     }
     toast("Signed in with Google!");
-    router.push("/dashboard");
-  };
-
-  const demo = () => {
-    loginDemo();
-    toast("Signed in as the sample student Alex Morgan");
     router.push("/dashboard");
   };
 
@@ -241,18 +234,6 @@ export default function Login() {
         </Button>
       </form>
 
-      <div className="my-5 flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-line" />
-        or explore
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      <Button variant="secondary" size="lg" icon={PlayCircle} className="w-full" onClick={demo} disabled={busy || googleBusy}>
-        Explore with the demo account
-      </Button>
-      <p className="mt-3 text-center text-xs text-muted">
-        Demo login: <code className="rounded bg-surface2 px-1.5 py-0.5">{DEMO_EMAIL}</code> / <code className="rounded bg-surface2 px-1.5 py-0.5">{DEMO_PASSWORD}</code>
-      </p>
       <p className="mt-6 text-center text-sm text-muted">
         New to MentorMind? <Link href="/signup" className="font-semibold text-brand hover:underline">Create an account</Link>
       </p>

@@ -30,7 +30,6 @@ const Section = ({ id, eyebrow, title, sub, children }: { id?: string; eyebrow: 
 export default function Landing() {
   const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
-  const { loginDemo } = useApp();
   const router = useRouter();
 
   return (
@@ -53,7 +52,6 @@ export default function Landing() {
             <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">Meet Your Personal <span className="gradient-text">AI Learning Companion.</span></h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">Learn smarter with multiple AI agents that understand your learning style, remember your progress and help you achieve your academic goals.</p>
             <div className="mt-8 flex flex-wrap gap-3"><Link href="/signup" className="btn btn-primary btn-lg"><PlayCircle className="h-5 w-5" />Start Learning</Link><a href="#agents" className="btn btn-secondary btn-lg">Explore AI Agents<ArrowRight className="h-5 w-5" /></a></div>
-            <button onClick={() => { loginDemo(); router.push("/dashboard"); }} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline"><Zap className="h-4 w-4" />Or jump into the demo account — no sign-up needed</button>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">{["Doubts, notes & quizzes", "Study plans & revision", "A memory you control"].map((t) => <li key={t} className="flex items-center gap-2"><CircleCheck className="h-4 w-4 text-ok" />{t}</li>)}</ul>
           </div>
           <Ecosystem />
@@ -139,11 +137,11 @@ export default function Landing() {
       </Section>
 
       {/* CTA */}
-      <section className="px-5 pb-20 sm:px-8"><div className="bg-aurora mx-auto max-w-5xl rounded-3xl border border-line p-10 text-center sm:p-14"><h2 className="font-display text-3xl font-bold sm:text-4xl">Ready to meet your <span className="gradient-text">learning companion</span>?</h2><p className="mx-auto mt-4 max-w-xl text-muted">Create a free account or explore the full app instantly with the demo student.</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/signup" className="btn btn-primary btn-lg">Start Learning</Link><button onClick={() => { loginDemo(); router.push("/dashboard"); }} className="btn btn-secondary btn-lg">Open demo dashboard</button></div></div></section>
+      <section className="px-5 pb-20 sm:px-8"><div className="bg-aurora mx-auto max-w-5xl rounded-3xl border border-line p-10 text-center sm:p-14"><h2 className="font-display text-3xl font-bold sm:text-4xl">Ready to meet your <span className="gradient-text">learning companion</span>?</h2><p className="mx-auto mt-4 max-w-xl text-muted">Create your free account and start your personalized AI-powered learning journey today.</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/signup" className="btn btn-primary btn-lg">Start Learning</Link><Link href="/login" className="btn btn-secondary btn-lg">Sign In</Link></div></div></section>
 
       <footer className="border-t border-line px-5 py-12 sm:px-8"><div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]"><div><Logo /><p className="mt-3 max-w-xs text-sm text-muted">Your Personal AI Learning Companion.</p></div>
         {[["Product", [["Features", "#features"], ["AI Agents", "#agents"], ["How it works", "#how"]]], ["Account", [["Login", "/login"], ["Get started", "/signup"], ["Help & support", "/help"]]], ["Project", [["About", "#about"], ["FAQ", "#about"], ["Educator portal (demo)", "/educator"]]]].map(([h, links]) => <div key={h as string}><p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted">{h as string}</p><ul className="space-y-2 text-sm">{(links as string[][]).map(([l, href]) => <li key={l}>{href.startsWith("#") ? <a href={href} className="text-muted hover:text-ink">{l}</a> : <Link href={href} className="text-muted hover:text-ink">{l}</Link>}</li>)}</ul></div>)}</div>
-        <p className="mx-auto mt-10 max-w-6xl text-xs text-muted">© {new Date().getFullYear()} MentorMind AI · Demonstration build. All student data shown is sample data.</p></footer>
+        <p className="mx-auto mt-10 max-w-6xl text-xs text-muted">© {new Date().getFullYear()} MentorMind AI · All rights reserved.</p></footer>
     </div>
   );
 }

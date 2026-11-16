@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/common/Logo";
 import { Avatar, Badge, Dropdown, Modal, Skeleton } from "@/components/common/ui";
+import { ModernTour } from "@/components/tour/ModernTour";
 import { useApp } from "@/hooks/useApp";
 import { cn, timeAgo } from "@/utils";
 
@@ -155,10 +156,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const [drawer, setDrawer] = useState(false);
   const [search, setSearch] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const collapsed = state.settings.sidebarCollapsed;
 
   useEffect(() => { if (ready && !state.session) router.replace("/access-denied"); }, [ready, state.session, router]);
   useEffect(() => { setDrawer(false); }, [path]);
+
+  // Open modern interactive tour on fresh login
+  useEffect(() => {
+    if (ready && state.session && state.tourCompleted === false) {
+      setTourOpen(true);
+    }
+  }, [ready, state.session, state.tourCompleted]);
+
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setSearch(true); }
@@ -202,7 +212,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button onClick={() => setSearch(true)} className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-line bg-surface2 px-3.5 text-sm text-muted transition hover:border-brand/50 sm:max-w-md" aria-label="Open search">
             <Search className="h-4 w-4" /><span className="flex-1 truncate text-left">Search pages, notes, topics…</span><kbd className="hidden rounded border border-line px-1.5 text-[10px] sm:block">⌘K</kbd>
           </button>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={() => setTourOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-brand/20"
+              title="Platform Feature Tour"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Feature Tour</span>
+            </button>
             {state.isSample && <Link href="/memory" className="mr-1 hidden md:block"><Badge tone="warn"><ShieldCheck className="h-3 w-3" />Sample data</Badge></Link>}
             <NotificationsMenu />
             <Dropdown trigger={() => (
@@ -213,6 +231,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}>
               {(close) => (
                 <div className="p-1.5">
+                  <button
+                    onClick={() => { close(); setTourOpen(true); }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-brand hover:bg-surface2"
+                  >
+                    <Sparkles className="h-4 w-4 text-brand" />Feature tour
+                  </button>
                   {[{ href: "/settings", label: "Profile & settings", icon: UserRound }, { href: "/memory", label: "Learning memory", icon: Brain }, { href: "/help", label: "Help & support", icon: CircleHelp }].map((m) => (
                     <Link key={m.href} href={m.href} onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-surface2"><m.icon className="h-4 w-4 text-muted" />{m.label}</Link>
                   ))}
@@ -236,6 +260,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button onClick={() => setDrawer(true)} className="flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold text-muted"><Menu className="h-5 w-5" />More</button>
       </nav>
       <SearchPalette open={search} onClose={() => setSearch(false)} />
+      <ModernTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ const TAG = { stored: { l: "Stored", t: "info", d: "You provided this" }, inferr
 const Tag = ({ k }: { k: keyof typeof TAG }) => <Badge tone={TAG[k].t as "info"} className="shrink-0">{TAG[k].l}</Badge>;
 
 export default function Memory() {
-  const { state, update, addMemory, resetDemo, clearProfile } = useApp();
+  const { state, update, addMemory, clearProfile } = useApp();
   const toast = useToast();
   const p = state.profile;
   const [prefs, setPrefs] = useState(false);
@@ -20,7 +20,7 @@ export default function Memory() {
   const [draftGoals, setDraftGoals] = useState(p.goals);
   const [history, setHistory] = useState(false);
   const [hTab, setHTab] = useState<"sessions" | "quizzes" | "revisions">("sessions");
-  const [confirm, setConfirm] = useState<"clear" | "reset" | null>(null);
+  const [confirm, setConfirm] = useState<"clear" | null>(null);
   const [explain, setExplain] = useState(false);
 
   const m = useMemo(() => {
@@ -95,8 +95,8 @@ export default function Memory() {
           {!state.memory.length && <li className="text-sm text-muted">No memory entries.</li>}
         </ol></Card>
 
-      <Card className="mt-6 border-bad/30 p-5"><h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold"><ShieldCheck className="h-4 w-4 text-bad" />Your data controls</h2><p className="mb-4 text-sm text-muted">{state.isSample ? "You are currently viewing sample demo data." : "Sample data has been cleared."} Both actions only affect this browser.</p>
-        <div className="flex flex-wrap gap-2"><Button variant="danger" icon={Trash2} onClick={() => setConfirm("clear")}>Clear learning profile</Button><Button variant="secondary" icon={RotateCcw} onClick={() => setConfirm("reset")}>Reset to sample data</Button></div></Card>
+      <Card className="mt-6 border-bad/30 p-5"><h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold"><ShieldCheck className="h-4 w-4 text-bad" />Your data controls</h2><p className="mb-4 text-sm text-muted">You have full control over your recorded learning data. Resetting telemetry starts your stats fresh.</p>
+        <div className="flex flex-wrap gap-2"><Button variant="danger" icon={Trash2} onClick={() => setConfirm("clear")}>Reset learning telemetry</Button></div></Card>
 
       <Modal open={prefs} onClose={() => setPrefs(false)} title="Edit learning preferences" footer={<><Button variant="ghost" onClick={() => setPrefs(false)}>Cancel</Button><Button onClick={savePrefs}>Save preferences</Button></>}><p className="mb-4 text-sm text-muted">Choose as many as you like. You can change them any time, and they are refined by your activity.</p><ChipSelect options={LEARNING_STYLES} value={draftStyles} onChange={setDraftStyles} /></Modal>
       <Modal open={goalsOpen} onClose={() => setGoalsOpen(false)} title="Update learning goals" footer={<><Button variant="ghost" onClick={() => setGoalsOpen(false)}>Cancel</Button><Button onClick={saveGoals}>Save goals</Button></>}><Field label="Your goals"><textarea className="input min-h-32" value={draftGoals} onChange={(e) => setDraftGoals(e.target.value)} /></Field></Modal>
@@ -109,8 +109,7 @@ export default function Memory() {
           {((hTab === "sessions" && !state.sessions.length) || (hTab === "quizzes" && !state.attempts.length) || (hTab === "revisions" && !state.revisionHistory.length)) && <li className="py-6 text-center text-muted">Nothing recorded yet.</li>}
         </ul>
       </Modal>
-      <Confirm open={confirm === "clear"} onClose={() => setConfirm(null)} danger title="Clear your learning profile?" confirmLabel="Clear everything" body="This removes sessions, quiz history, mistakes, revision queue, inferred insights, tasks and activity from this browser. Your preferences, goals, notes and materials are kept." onConfirm={() => { clearProfile(); toast("Learning profile cleared", "info"); }} />
-      <Confirm open={confirm === "reset"} onClose={() => setConfirm(null)} title="Reset to sample data?" confirmLabel="Reset" body="All your changes to learning data will be replaced with the original sample dataset. Your profile details and settings stay." onConfirm={() => { resetDemo(); toast("Sample data restored", "info"); }} />
+      <Confirm open={confirm === "clear"} onClose={() => setConfirm(null)} danger title="Reset your learning telemetry?" confirmLabel="Reset telemetry" body="This removes recorded sessions, quiz history, mistakes, revision queue and activity. Your profile details, goals, notes and materials are kept." onConfirm={() => { clearProfile(); toast("Learning telemetry reset", "info"); }} />
       <p className="mt-6 flex items-center justify-center gap-2 text-center text-xs text-muted"><Eye className="h-3.5 w-3.5" />Last updated {state.memory[0] ? timeAgo(new Date(state.memory[0].date + "T12:00:00").toISOString()) : "never"}</p>
     </>
   );

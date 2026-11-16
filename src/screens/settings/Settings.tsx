@@ -10,7 +10,7 @@ import { download, minsLabel } from "@/utils";
 
 type Tab = "personal" | "academic" | "learning" | "notifications" | "privacy" | "appearance" | "account";
 export default function SettingsPage() {
-  const { state, update, addMemory, logout, resetDemo } = useApp();
+  const { state, update, addMemory, logout } = useApp();
   const router = useRouter();
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("personal");
@@ -39,7 +39,7 @@ export default function SettingsPage() {
   const exportData = () => { download("mentormind-data.json", JSON.stringify({ ...state, session: undefined, profile: { ...state.profile, avatarImage: undefined } }, null, 2), "application/json"); toast("Data exported"); };
   const deleteAccount = () => {
     try { localStorage.removeItem(STORAGE_KEY); const accs = JSON.parse(localStorage.getItem("mm-accounts") || "[]").filter((a: { email: string }) => a.email !== state.profile.email); localStorage.setItem("mm-accounts", JSON.stringify(accs)); } catch { /* ignore */ }
-    resetDemo(); logout(); router.push("/");
+    logout(); router.push("/login");
   };
   const tabs = [{ id: "personal" as Tab, label: "Personal", icon: UserRound }, { id: "academic" as Tab, label: "Academic", icon: GraduationCap }, { id: "learning" as Tab, label: "Learning", icon: Sliders }, { id: "notifications" as Tab, label: "Notifications", icon: Bell }, { id: "privacy" as Tab, label: "Privacy", icon: Shield }, { id: "appearance" as Tab, label: "Appearance", icon: Palette }, { id: "account" as Tab, label: "Account", icon: Cog }];
 

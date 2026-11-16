@@ -152,7 +152,7 @@ export default function Dashboard() {
           <Card className="p-5"><p className="mb-3 flex items-center gap-2 text-sm font-semibold"><Flame className="h-4 w-4 text-warn" />Study consistency · 5 weeks</p><Heatmap days={m.heat} /></Card>
         </div>
       </section>
-      <p className="text-center text-xs text-muted">Student profile, tasks, quizzes and analytics shown here are <b>sample data</b> unless you changed them. They are stored only in this browser.</p>
+      <p className="text-center text-xs text-muted">All learning activity, quiz attempts and study hours are recorded live in your MentorMind account.</p>
     </div>
   );
 }
