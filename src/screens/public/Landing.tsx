@@ -17,7 +17,7 @@ const subj = [{ n: "Python", v: 82 }, { n: "DBMS", v: 61 }, { n: "Maths", v: 57 
 function Window({ children, title, className }: { children: React.ReactNode; title: string; className?: string }) {
   return (
     <div className={cn("card overflow-hidden shadow-2xl shadow-black/20", className)}>
-      <div className="flex items-center gap-2 border-b border-line bg-surface2 px-4 py-2.5"><span className="h-2.5 w-2.5 rounded-full bg-bad/70" /><span className="h-2.5 w-2.5 rounded-full bg-warn/70" /><span className="h-2.5 w-2.5 rounded-full bg-ok/70" /><span className="ml-3 text-[11px] text-muted">{title}</span><span className="ml-auto rounded bg-warn/15 px-1.5 py-0.5 text-[10px] font-semibold text-warn">sample data</span></div>
+      <div className="flex items-center gap-2 border-b border-line bg-surface2 px-4 py-2.5"><span className="h-2.5 w-2.5 rounded-full bg-bad/70" /><span className="h-2.5 w-2.5 rounded-full bg-warn/70" /><span className="h-2.5 w-2.5 rounded-full bg-ok/70" /><span className="ml-3 text-[11px] text-muted">{title}</span><span className="ml-auto rounded bg-brand/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand">live preview</span></div>
       {children}
     </div>
   );

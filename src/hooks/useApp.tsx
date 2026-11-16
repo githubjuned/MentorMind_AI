@@ -55,6 +55,49 @@ const readAccounts = (): Account[] => {
 const writeAccounts = (a: Account[]) => localStorage.setItem("mm-accounts", JSON.stringify(a));
 const hasPref = (s: AppState, k: keyof AppState["settings"]["notifPrefs"]) => s.settings.notifPrefs[k];
 
+function sanitizeCleanState(s: AppState): AppState {
+  const isContaminated =
+    s.isSample ||
+    (s as any).isSample === true ||
+    (s.tasks && s.tasks.some((t) => t.title.toLowerCase().includes("sql joins practice") || t.title.toLowerCase().includes("probability"))) ||
+    (s.sessions && s.sessions.some((sess) => (sess as any).hours === 42.7 || sess.topic?.toLowerCase().includes("normalization"))) ||
+    s.profile?.department === "AI & DS" ||
+    (s.profile?.institution && s.profile.institution.includes("sample")) ||
+    (s.profile?.name === "Alex Morgan");
+
+  if (isContaminated) {
+    return {
+      ...s,
+      isSample: false,
+      sessions: [],
+      tasks: [],
+      attempts: [],
+      mistakes: [],
+      revisions: [],
+      revisionHistory: [],
+      activity: [],
+      activeQuiz: null,
+      notes: (s.notes || []).filter((n) => !n.sample),
+      materials: (s.materials || []).filter((m) => !m.sample),
+      topics: s.topics.map((t) => ({
+        ...t,
+        status: "not_started" as const,
+        mastery: 0,
+        lastStudied: undefined,
+      })),
+      profile: {
+        ...s.profile,
+        name: s.profile.name === "Alex Morgan" ? "Student" : s.profile.name,
+        department: s.profile.department === "AI & DS" ? "" : s.profile.department,
+        institution: s.profile.institution?.includes("sample") ? "" : s.profile.institution,
+        year: s.profile.year === "Second Year" ? "" : s.profile.year,
+      },
+    };
+  }
+
+  return { ...s, isSample: false };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => createSeed());
   const [ready, setReady] = useState(false);
@@ -62,12 +105,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+      // Purge contaminated legacy localStorage keys
+      localStorage.removeItem("mentormind-state-v1");
+      localStorage.removeItem("mentormind-demo");
+      localStorage.removeItem("mentormind-state");
+
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as AppState;
+        const clean = sanitizeCleanState(parsed);
         const seed = createSeed();
-        const merged: AppState = { ...seed, ...parsed, settings: { ...seed.settings, ...parsed.settings, notifPrefs: { ...seed.settings.notifPrefs, ...parsed.settings?.notifPrefs }, privacy: { ...seed.settings.privacy, ...parsed.settings?.privacy } } };
-        if (localStorage.getItem("mm-remember") === "0" && !sessionStorage.getItem("mm-alive")) merged.session = null;
+        const merged: AppState = {
+          ...seed,
+          ...clean,
+          isSample: false,
+          settings: {
+            ...seed.settings,
+            ...clean.settings,
+            notifPrefs: { ...seed.settings.notifPrefs, ...clean.settings?.notifPrefs },
+            privacy: { ...seed.settings.privacy, ...clean.settings?.privacy },
+          },
+        };
+        if (localStorage.getItem("mm-remember") === "0" && !sessionStorage.getItem("mm-alive")) {
+          merged.session = null;
+        }
         setState(merged);
       }
     } catch { /* corrupted storage: fall back to seed */ }
@@ -97,17 +158,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Hydrate from Firebase RTDB if available
         const remote = await getStudentStateFromFirebase(uid, email);
         setState((current) => {
-          const base = remote ? { ...current, ...remote } : current;
-          return {
+          let base = remote ? { ...current, ...remote } : current;
+          base = sanitizeCleanState(base as AppState);
+          const cleanState: AppState = {
             ...base,
+            isSample: false,
             session: { email, uid, photoURL },
             profile: {
               ...base.profile,
               email: email || base.profile.email,
-              name: displayName || base.profile.name,
+              name: displayName || (base.profile.name && base.profile.name !== "Student" ? base.profile.name : (email.split("@")[0] || "Student")),
               avatarImage: photoURL || base.profile.avatarImage,
             },
           };
+          // Immediately overwrite any dirty dummy data in Firebase Realtime Database
+          saveStudentStateToFirebase(cleanState, uid).catch((err) => {
+            console.warn("Failed to sync clean state to Firebase:", err);
+          });
+          return cleanState;
         });
       }
     });

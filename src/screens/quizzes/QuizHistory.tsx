@@ -45,7 +45,7 @@ export default function QuizHistory() {
           <ul className="divide-y divide-line">
             {rows.map((a) => (
               <li key={a.id} className="grid items-center gap-2 px-5 py-4 md:grid-cols-[1.6fr_1.2fr_.8fr_.7fr_.8fr_.8fr_auto] md:gap-3">
-                <span className="font-semibold">{a.topic}{a.sample && <span className="ml-2 text-[10px] font-normal text-muted">sample</span>}</span>
+                <span className="font-semibold">{a.topic}</span>
                 <span><Badge color={subjectColor(state, a.subjectId)}>{subjectName(state, a.subjectId).split(" ")[0]}</Badge></span>
                 <span className="text-sm text-muted">{fmtDate(a.date.slice(0, 10), true)}</span>
                 <span className="text-sm">{a.score}/{a.total}</span>

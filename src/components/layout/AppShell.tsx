@@ -80,7 +80,7 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
       </nav>
       <div className="shrink-0 border-t border-line p-3">
         <Link href="/educator" onClick={onNavigate} title="Educator portal" className={cn("flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-surface2 hover:text-ink", collapsed && "justify-center px-0")}>
-          <GraduationCap className="h-[18px] w-[18px]" aria-hidden />{!collapsed && <span>Educator portal <Badge tone="muted">demo</Badge></span>}
+          <GraduationCap className="h-[18px] w-[18px]" aria-hidden />{!collapsed && <span>Educator portal</span>}
         </Link>
       </div>
     </div>
@@ -241,12 +241,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Sparkles className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Feature Tour</span>
             </button>
-            {state.isSample && <Link href="/memory" className="mr-1 hidden md:block"><Badge tone="warn"><ShieldCheck className="h-3 w-3" />Sample data</Badge></Link>}
             <NotificationsMenu />
             <Dropdown trigger={() => (
               <button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-surface2" aria-label="Account menu">
                 <Avatar name={state.profile.name} color={state.profile.avatarColor} image={state.profile.avatarImage} size={32} />
-                <span className="hidden text-left text-xs leading-tight md:block"><span className="block font-semibold">{state.profile.name}</span><span className="text-muted">{state.profile.department}</span></span>
+                <span className="hidden text-left text-xs leading-tight md:block">
+                  <span className="block font-semibold">{state.profile.name}</span>
+                  {state.profile.department ? <span className="text-muted">{state.profile.department}</span> : null}
+                </span>
               </button>
             )}>
               {(close) => (

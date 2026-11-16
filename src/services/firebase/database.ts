@@ -47,6 +47,7 @@ export async function saveStudentStateToFirebase(state: AppState, userUid?: stri
     memory: state.memory,
     activity: state.activity,
     savedResources: state.savedResources,
+    isSample: false,
     conversations: state.conversations || [],
     tourCompleted: state.tourCompleted ?? false,
     updatedAt: new Date().toISOString(),

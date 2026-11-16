@@ -163,7 +163,7 @@ export default function Notes() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {view.map((n) => (
                 <Card key={n.id} className="card-hover flex flex-col p-5">
-                  <div className="mb-2 flex flex-wrap gap-1.5"><Badge color={subjectColor(state, n.subjectId)}>{subjectName(state, n.subjectId).split(" ")[0]}</Badge><Badge tone="warn">{noteTypeLabel(n.type)}</Badge>{n.sample && <Badge>Sample</Badge>}</div>
+                  <div className="mb-2 flex flex-wrap gap-1.5"><Badge color={subjectColor(state, n.subjectId)}>{subjectName(state, n.subjectId).split(" ")[0]}</Badge><Badge tone="warn">{noteTypeLabel(n.type)}</Badge></div>
                   <h3 className="font-display text-base font-semibold leading-snug">{n.title}</h3>
                   <p className="mt-2 line-clamp-3 flex-1 text-sm text-muted">{n.content.replace(/[#>*`\-]/g, "").replace(/\s+/g, " ").slice(0, 160)}…</p>
                   <p className="mt-3 text-xs text-muted">{n.source} · updated {fmtDate(n.updatedAt.slice(0, 10))}</p>

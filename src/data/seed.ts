@@ -4,7 +4,7 @@ import { addDays, todayStr, uid } from "@/utils";
 
 export const DEMO_EMAIL = "";
 export const DEMO_PASSWORD = "";
-export const STORAGE_KEY = "mentormind-state-v1";
+export const STORAGE_KEY = "mentormind-production-v2";
 
 export const LEARNING_STYLES = [
   "Conceptual explanations",
@@ -21,13 +21,13 @@ export const SUBJECT_COLORS = ["#22d3ee", "#fb923c", "#a78bfa", "#34d399", "#f47
 export const defaultProfile = (initialName = "Student", initialEmail = ""): Profile => ({
   name: initialName,
   email: initialEmail,
-  department: "Computer Science & AI",
-  year: "First Year",
+  department: "",
+  year: "",
   institution: "",
-  goals: "Build a strong foundation in core subjects, practice quizzes, and achieve consistent academic growth.",
+  goals: "",
   phone: "",
-  dailyMinutes: 90,
-  styles: ["Practical examples", "Step-by-step explanations", "Short notes"],
+  dailyMinutes: 60,
+  styles: ["Practical examples", "Step-by-step explanations"],
   availability: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false },
   avatarColor: "#8b7bff",
 });
@@ -54,37 +54,6 @@ export function createSeed(customName = "Student", customEmail = ""): AppState {
     lastStudied: undefined,
   }));
 
-  // Clean starter goals
-  const goals: Goal[] = [
-    { id: uid(), title: "Study 90 minutes today", kind: "daily", target: 90, progress: 0, unit: "min", done: false },
-    { id: uid(), title: "Complete 3 quizzes this week", kind: "weekly", target: 3, progress: 0, unit: "quizzes", due: addDays(today, 6), done: false },
-    { id: uid(), title: "Master 2 new topics", kind: "weekly", target: 2, progress: 0, unit: "topics", due: addDays(today, 6), done: false },
-  ];
-
-  // Fresh welcome notification
-  const notifications: Notif[] = [
-    {
-      id: uid(),
-      kind: "reminder",
-      title: "Welcome to MentorMind AI!",
-      body: "Your intelligent personalized learning workspace is active. Take the feature tour or start by asking a doubt.",
-      time: new Date().toISOString(),
-      read: false,
-      href: "/dashboard",
-    },
-  ];
-
-  // Initial account created memory event
-  const memory: MemoryEvent[] = [
-    {
-      id: uid(),
-      date: today,
-      kind: "stored",
-      title: "Account initialized",
-      detail: "Personalized learning profile active. MentorMind will adapt to your study telemetry as you learn.",
-    },
-  ];
-
   return {
     version: 1,
     session: null,
@@ -108,12 +77,12 @@ export function createSeed(customName = "Student", customEmail = ""): AppState {
     activeQuiz: null,
     notes: [],
     materials: [],
-    goals,
-    notifications,
+    goals: [],
+    notifications: [],
     revisions: [],
     revisionHistory: [],
     mistakes: [],
-    memory,
+    memory: [],
     activity: [],
     savedResources: [],
     conversations: [

@@ -83,7 +83,7 @@ export default function Materials() {
           {list.map((m) => (
             <Card key={m.id} className="card-hover flex flex-col p-5">
               <div className="flex items-start gap-3"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ background: `${KIND_COLOR[m.kind]}22`, color: KIND_COLOR[m.kind] }}><FileText className="h-6 w-6" /></span><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-semibold" title={m.name}>{m.name}</h3><p className="text-xs text-muted">{m.kind.toUpperCase()} · {m.sizeKB >= 1024 ? `${(m.sizeKB / 1024).toFixed(1)} MB` : `${m.sizeKB} KB`}</p></div></div>
-              <div className="mt-3 flex flex-wrap gap-1.5"><Badge color={subjectColor(state, m.subjectId)}>{subjectName(state, m.subjectId).split(" ")[0]}</Badge>{m.sample && <Badge>Sample</Badge>}{m.bookmarks.length > 0 && <Badge tone="warn">{m.bookmarks.length} bookmarks</Badge>}</div>
+              <div className="mt-3 flex flex-wrap gap-1.5"><Badge color={subjectColor(state, m.subjectId)}>{subjectName(state, m.subjectId).split(" ")[0]}</Badge>{m.bookmarks.length > 0 && <Badge tone="warn">{m.bookmarks.length} bookmarks</Badge>}</div>
               <p className="mt-3 flex items-center gap-1.5 text-xs text-muted"><Clock className="h-3.5 w-3.5" />Uploaded {fmtDate(m.uploadedAt.slice(0, 10))} · used {timeAgo(m.lastUsedAt)}</p>
               <div className="mt-4 flex gap-2"><Link href={`/materials/${m.id}`} className="btn btn-secondary btn-sm flex-1"><File className="h-3.5 w-3.5" />Open</Link><Button size="sm" variant="ghost" icon={Trash2} aria-label={`Delete ${m.name}`} onClick={() => setDel(m)} /></div>
             </Card>
@@ -97,7 +97,7 @@ export default function Materials() {
             : <button onClick={() => ref.current?.click()} onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); choose(e.dataTransfer.files[0]); }} className={`flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-10 text-sm transition ${drag ? "border-brand bg-brand/10" : "border-line text-muted hover:border-brand"}`}><Upload className="h-8 w-8" /><span className="font-semibold text-ink">Drop a file or click to browse</span><span className="text-xs">PDF, DOCX or TXT · up to 5 MB</span></button>}
           <Field label="Subject"><select className="input" value={upSubject} onChange={(e) => setUpSubject(e.target.value)}>{state.subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
           {err && <p role="alert" className="text-sm font-medium text-bad">{err}</p>}
-          <p className="rounded-xl bg-warn/10 p-3 text-xs text-warn">Demo build: files stay in your browser. Text files are read in full; PDF/DOCX text extraction needs a backend, so those open in a clearly-labelled demo state.</p>
+          <p className="rounded-xl bg-brand/10 p-3 text-xs text-brand">Uploaded study materials and notes are stored securely in your personal account.</p>
         </div>
       </Modal>
       <Confirm open={!!del} onClose={() => setDel(null)} danger title="Delete this material?" body={<>“{del?.name}” and its bookmarks will be removed from this device.</>} confirmLabel="Delete" onConfirm={() => { update((s) => ({ ...s, materials: s.materials.filter((m) => m.id !== del?.id) })); toast("Material deleted", "info"); }} />

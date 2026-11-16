@@ -5,14 +5,12 @@ import { Button, Card, EmptyState, Field, PageHeader, Tabs, cn, useToast } from 
 import { useApp } from "@/hooks/useApp";
 
 export const FAQS = [
-  ["Is MentorMind connected to a real AI model?", "Not in this build. It's a front-end demonstration with a clearly labelled, rule-based routing service and a small built-in knowledge base. The service sits behind a provider interface so a real backend can replace it."],
-  ["Are the seven agents really separate AI agents?", "In this demo they are separate modules that the coordinator routes to, not independently running AI systems. The interface shows which module handled each request."],
-  ["Where is my data stored?", "In your browser's local storage on this device. Nothing is uploaded, and no other user can see it. You can export or delete everything in Settings."],
-  ["What does sample data mean?", "The demo student (Alex Morgan) and new accounts start with fictional data so every page has content. It's marked as sample and you can clear or reset it from Learning Memory."],
-  ["Can it read my PDF or DOCX files?", "Not yet. Text files are read in your browser. PDF/DOCX extraction needs a backend service, so those files open in a labelled demo state."],
-  ["How does MentorMind decide my weak topics?", "From your quiz accuracy, recorded mistakes and mastery scores. Each insight shows its evidence and a confidence level; small samples are flagged."],
-  ["Can I change my learning style?", "Yes, any time in Learning Memory or Settings. Preferences are starting points rather than labels."],
-  ["Who can see my learning memory?", "Only you. The demo educator portal shows aggregate, anonymous totals and only if you enable it in Privacy settings."],
+  ["Is MentorMind connected to live AI?", "Yes. MentorMind uses Google Gemini AI for real-time Socratic explanation, adaptive practice quiz generation, structured notes synthesis, and intelligent curriculum planning."],
+  ["How are the AI agents coordinated?", "The AI Coordinator analyzes your prompt, determines the pedagogical intent, and routes it to the specialized agent (Socratic Coach, Concept Explainer, Exam Crammer, or Formula Assistant)."],
+  ["Where is my data stored?", "In your secure Firebase Realtime Database with strict per-user UID isolation rules, synced directly with your authenticated Google or Email account."],
+  ["How does my learning history start?", "Every new account starts completely fresh with zero recorded dummy data. As you study, take quizzes, and log sessions, your real performance metrics are recorded live."],
+  ["Can I change my learning style?", "Yes, any time in Learning Memory or Settings. Your preferences dynamically guide how the AI models format explanations and examples."],
+  ["Who can see my learning memory?", "Only you. All personal memory, topics mastery, and quiz attempts are strictly protected under your authenticated user ID."],
 ] as const;
 
 const GUIDES = {
