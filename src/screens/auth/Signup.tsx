@@ -11,11 +11,11 @@ import { cn } from "@/utils";
 
 export const DEPARTMENTS = ["AI & DS", "Computer Science", "Information Technology", "Electronics & Communication", "Mechanical", "Civil", "Business", "Other"];
 export const YEARS = ["First Year", "Second Year", "Third Year", "Fourth Year", "Postgraduate"];
-const strength = (p: string) => [p.length >= 8, /[A-Z]/.test(p), /[0-9]/.test(p), /[^A-Za-z0-9]/.test(p)].filter(Boolean).length;
+const strength = (p: string) => [p.length >= 6, /[A-Z]/.test(p), /[0-9]/.test(p), /[^A-Za-z0-9]/.test(p)].filter(Boolean).length;
 
-const NAME_MAX = 40;
-const EMAIL_MAX = 50;
-const PASSWORD_MAX = 32;
+const NAME_MAX = 15;
+const EMAIL_MAX = 25;
+const PASSWORD_MAX = 8;
 const INSTITUTION_MAX = 60;
 const GOALS_MAX = 200;
 
@@ -75,8 +75,11 @@ export default function Signup() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (f.name.trim().length < 2) e.name = "Enter your full name.";
+    else if (f.name.length > NAME_MAX) e.name = `Name cannot exceed ${NAME_MAX} characters.`;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = "Enter a valid email address.";
-    if (f.password.length < 6) e.password = "Use at least 6 characters.";
+    else if (f.email.length > EMAIL_MAX) e.email = `Email cannot exceed ${EMAIL_MAX} characters.`;
+    if (f.password.length < 6) e.password = "Password must be 6 to 8 characters.";
+    else if (f.password.length > PASSWORD_MAX) e.password = `Password cannot exceed ${PASSWORD_MAX} characters.`;
     if (f.confirm !== f.password) e.confirm = "Passwords do not match.";
     if (!f.department) e.department = "Select your department.";
     if (!f.year) e.year = "Select your academic year.";

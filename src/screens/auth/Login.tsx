@@ -12,8 +12,8 @@ import { cn } from "@/utils";
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-const EMAIL_MAX = 50;
-const PASSWORD_MAX = 32;
+const EMAIL_MAX = 25;
+const PASSWORD_MAX = 8;
 
 export default function Login() {
   const { login, loginGoogle, loginDemo, resetPassword } = useApp();
