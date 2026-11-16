@@ -14,7 +14,18 @@ import {
 } from "@/services/firebase/auth";
 
 interface Account { email: string; hash: string; profile: Profile }
-export interface SignupInput { name: string; email: string; password: string; department: string; year: string; institution: string; goals: string }
+export interface SignupInput {
+  name: string;
+  email: string;
+  password: string;
+  department: string;
+  year: string;
+  institution: string;
+  goals: string;
+  termsAccepted?: boolean;
+  ageConfirmed?: boolean;
+  marketing?: boolean;
+}
 type Result = { ok: boolean; error?: string };
 
 interface Ctx {
@@ -234,6 +245,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       onboarded: true,
       tourCompleted: false,
       session: { email: e, uid: uidStr },
+      consent: {
+        terms: true,
+        privacy: true,
+        ageConfirmed: d.ageConfirmed ?? true,
+        marketing: !!d.marketing,
+        timestamp: new Date().toISOString(),
+        version: "v1.0",
+      },
       memory: [
         {
           id: uid(),

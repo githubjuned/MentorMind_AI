@@ -251,12 +251,22 @@ export interface Settings {
   privacy: { useMemory: boolean; shareAggregate: boolean; educatorView: boolean };
 }
 
+export interface ConsentRecord {
+  terms: boolean;
+  privacy: boolean;
+  ageConfirmed: boolean;
+  marketing: boolean;
+  timestamp: string;
+  version: string;
+}
+
 export interface AppState {
   version: number;
   session: { email: string; uid?: string; photoURL?: string } | null;
   onboarded: boolean;
   isSample: boolean;
   tourCompleted?: boolean;
+  consent?: ConsentRecord;
   profile: Profile;
   settings: Settings;
   subjects: Subject[];

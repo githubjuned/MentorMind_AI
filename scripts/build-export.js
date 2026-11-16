@@ -13,8 +13,8 @@ if (fs.existsSync(apiPath)) {
 }
 
 try {
-  console.log("Building static export for Firebase Hosting...");
-  execSync("npx next build", {
+  console.log("Building static export for Firebase Hosting with Webpack...");
+  execSync("npx next build --webpack", {
     stdio: "inherit",
     env: { ...process.env, NEXT_EXPORT: "true" },
   });

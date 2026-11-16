@@ -1,0 +1,26 @@
+{
+  "short_name": "MentorMind",
+  "name": "MentorMind AI — Personal AI Learning Companion",
+  "description": "Multi-agent AI learning platform: Socratic doubt solving, adaptive quizzes, revision notes, and study planning.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/app",
+  "background_color": "#0a0c16",
+  "theme_color": "#0a0c16",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["education", "productivity"]
+}

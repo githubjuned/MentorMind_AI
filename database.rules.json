@@ -1,10 +1,25 @@
 {
   "rules": {
     "students": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+      "$studentId": {
+        ".read": "auth != null && auth.uid === $studentId",
+        ".write": "auth != null && auth.uid === $studentId",
+        ".indexOn": ["updatedAt", "createdAt"]
       }
-    }
+    },
+    "privacy_requests": {
+      "$requestId": {
+        ".read": "auth != null && (data.child('userId').val() === auth.uid || auth.token.admin === true)",
+        ".write": "auth != null && (newData.child('userId').val() === auth.uid || auth.token.admin === true)"
+      }
+    },
+    "audit_logs": {
+      "$logId": {
+        ".read": "auth != null && auth.token.admin === true",
+        ".write": "auth != null && newData.child('userId').val() === auth.uid"
+      }
+    },
+    ".read": false,
+    ".write": false
   }
 }

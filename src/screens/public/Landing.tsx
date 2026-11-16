@@ -1,15 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Brain, CalendarClock, Check, ChevronDown, CircleCheck, Layers, ListChecks, Menu, Network, NotebookPen, PlayCircle, Repeat, Sparkles, Target, TrendingUp, X, Zap } from "lucide-react";
-import { Logo } from "@/components/common/Logo";
+import { ArrowRight, Brain, CalendarClock, Check, ChevronDown, CircleCheck, Layers, ListChecks, Menu, Network, NotebookPen, PlayCircle, Repeat, Sparkles, Target, TrendingUp, X, Zap, ShieldCheck } from "lucide-react";
 import { Ecosystem } from "@/components/public/Ecosystem";
 import { AreaTrend, BarsChart } from "@/components/charts/charts";
 import { Progress, Ring, cn } from "@/components/common/ui";
 import { SPECIALISTS, AGENTS } from "@/data/agents";
 import { FAQS } from "@/screens/settings/Help";
-import { useApp } from "@/hooks/useApp";
-import { useRouter } from "next/navigation";
+import { PublicHeader } from "@/components/public/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
 
 const NAV = [["Home", "#home"], ["Features", "#features"], ["AI Agents", "#agents"], ["How It Works", "#how"], ["About", "#about"]] as const;
 const trend = [{ d: "Mon", h: 1.5 }, { d: "Tue", h: 2.2 }, { d: "Wed", h: 1.1 }, { d: "Thu", h: 2.8 }, { d: "Fri", h: 2.4 }, { d: "Sat", h: 3.1 }, { d: "Sun", h: 1.6 }];
@@ -28,21 +27,11 @@ const Section = ({ id, eyebrow, title, sub, children }: { id?: string; eyebrow: 
 );
 
 export default function Landing() {
-  const [menu, setMenu] = useState(false);
   const [faq, setFaq] = useState<number | null>(0);
-  const router = useRouter();
 
   return (
-    <div className="bg-app">
-      <header className="glass sticky top-0 z-50 border-b border-line">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5 sm:px-8">
-          <Logo />
-          <nav className="ml-6 hidden items-center gap-1 lg:flex" aria-label="Primary">{NAV.map(([l, h]) => <a key={l} href={h} className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-surface2 hover:text-ink">{l}</a>)}</nav>
-          <div className="ml-auto hidden items-center gap-2 lg:flex"><Link href="/login" className="btn btn-ghost">Login</Link><Link href="/signup" className="btn btn-primary">Get Started</Link></div>
-          <button className="ml-auto rounded-xl p-2 text-muted hover:bg-surface2 lg:hidden" onClick={() => setMenu((m) => !m)} aria-label="Toggle menu" aria-expanded={menu}>{menu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}</button>
-        </div>
-        {menu && <div className="anim-fade-up border-t border-line px-5 py-4 lg:hidden"><nav className="grid gap-1">{NAV.map(([l, h]) => <a key={l} href={h} onClick={() => setMenu(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface2">{l}</a>)}</nav><div className="mt-3 grid grid-cols-2 gap-2"><Link href="/login" className="btn btn-secondary">Login</Link><Link href="/signup" className="btn btn-primary">Get Started</Link></div></div>}
-      </header>
+    <div className="bg-app flex min-h-screen flex-col">
+      <PublicHeader />
 
       {/* Hero */}
       <section id="home" className="bg-aurora relative overflow-hidden px-5 pb-16 pt-14 sm:px-8 sm:pt-20">
@@ -127,21 +116,33 @@ export default function Landing() {
       </Section>
 
       {/* About */}
-      <Section id="about" eyebrow="About" title="A university demonstration of multi-agent learning">
-        <div className="card mx-auto max-w-3xl p-7 text-center text-muted"><p>MentorMind AI is a complete front-end demonstration of how a multi-agent learning platform could work. The coordinator and the seven specialists run as a clearly labelled <b className="text-ink">demo routing service</b> with a small built-in knowledge base — no live AI model is connected and no independent agents are running. All sample data is fictional and stays in your browser.</p><p className="mt-3">The services are written behind a provider interface so a real orchestration backend can be plugged in later.</p></div>
+      <Section id="about" eyebrow="Our Mission" title="Next-generation multi-agent architecture for every student">
+        <div className="card mx-auto max-w-3xl p-7 text-center text-muted">
+          <p>
+            MentorMind AI combines the analytical power of state-of-the-art Google Gemini LLMs with dedicated cognitive agents specializing in Socratic inquiry, conceptual clarity, adaptive testing, and active recall.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Link href="/about" className="btn btn-secondary text-xs">Read Full Story & Team</Link>
+            <Link href="/features" className="btn btn-ghost text-xs">Explore Agent Specs</Link>
+            <Link href="/how-it-works" className="btn btn-ghost text-xs">How It Works</Link>
+          </div>
+        </div>
       </Section>
 
       {/* FAQ */}
       <Section eyebrow="FAQ" title="Frequently asked questions">
         <ul className="mx-auto max-w-3xl space-y-2">{FAQS.map(([q, a], i) => <li key={q} className="card overflow-hidden"><button className="flex w-full items-center gap-3 p-4 text-left" aria-expanded={faq === i} onClick={() => setFaq(faq === i ? null : i)}><span className="flex-1 text-sm font-semibold">{q}</span><ChevronDown className={cn("h-4 w-4 text-muted transition", faq === i && "rotate-180")} /></button>{faq === i && <p className="border-t border-line px-4 py-3 text-sm text-muted">{a}</p>}</li>)}</ul>
+        <div className="mt-6 text-center">
+          <Link href="/faq" className="text-xs font-semibold text-brand hover:underline inline-flex items-center gap-1">
+            Browse all categorized questions and exam guidelines <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
       </Section>
 
       {/* CTA */}
       <section className="px-5 pb-20 sm:px-8"><div className="bg-aurora mx-auto max-w-5xl rounded-3xl border border-line p-10 text-center sm:p-14"><h2 className="font-display text-3xl font-bold sm:text-4xl">Ready to meet your <span className="gradient-text">learning companion</span>?</h2><p className="mx-auto mt-4 max-w-xl text-muted">Create your free account and start your personalized AI-powered learning journey today.</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/signup" className="btn btn-primary btn-lg">Start Learning</Link><Link href="/login" className="btn btn-secondary btn-lg">Sign In</Link></div></div></section>
 
-      <footer className="border-t border-line px-5 py-12 sm:px-8"><div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]"><div><Logo /><p className="mt-3 max-w-xs text-sm text-muted">Your Personal AI Learning Companion.</p></div>
-        {[["Product", [["Features", "#features"], ["AI Agents", "#agents"], ["How it works", "#how"]]], ["Account", [["Login", "/login"], ["Get started", "/signup"], ["Help & support", "/help"]]], ["Project", [["About", "#about"], ["FAQ", "#about"], ["Educator portal (demo)", "/educator"]]]].map(([h, links]) => <div key={h as string}><p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted">{h as string}</p><ul className="space-y-2 text-sm">{(links as string[][]).map(([l, href]) => <li key={l}>{href.startsWith("#") ? <a href={href} className="text-muted hover:text-ink">{l}</a> : <Link href={href} className="text-muted hover:text-ink">{l}</Link>}</li>)}</ul></div>)}</div>
-        <p className="mx-auto mt-10 max-w-6xl text-xs text-muted">© {new Date().getFullYear()} MentorMind AI · All rights reserved.</p></footer>
+      <PublicFooter />
     </div>
   );
 }

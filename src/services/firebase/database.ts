@@ -151,3 +151,46 @@ export async function saveNoteToFirebase(identifier: string, note: Note): Promis
   }
 }
 
+
+
+/**
+ * Permanently purge student data from Firebase Realtime Database
+ */
+export async function deleteStudentDataFromFirebase(identifier?: string): Promise<boolean> {
+  const key = identifier || auth.currentUser?.uid;
+  if (!key) return false;
+  try {
+    const studentRef = ref(rtdb, `students/${key}`);
+    await set(studentRef, null);
+    return true;
+  } catch (err) {
+    console.error("Error deleting student data:", err);
+    return false;
+  }
+}
+
+/**
+ * Submit a DPDP Act privacy request (Access, Rectification, Erasure)
+ */
+export async function submitPrivacyRequestToFirebase(
+  userId: string,
+  userEmail: string,
+  type: "access" | "correction" | "erasure" | "grievance",
+  details: string
+): Promise<boolean> {
+  try {
+    const reqRef = push(ref(rtdb, "privacy_requests"));
+    await set(reqRef, {
+      userId,
+      userEmail,
+      type,
+      details,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    console.error("Error submitting privacy request:", err);
+    return false;
+  }
+}

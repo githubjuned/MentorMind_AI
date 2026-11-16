@@ -157,7 +157,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const [search, setSearch] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const collapsed = state.settings.sidebarCollapsed;
+
+  useEffect(() => {
+    setIsOffline(!navigator.onLine);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => { if (ready && !state.session) router.replace("/access-denied"); }, [ready, state.session, router]);
   useEffect(() => { setDrawer(false); }, [path]);
@@ -246,6 +259,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Dropdown>
           </div>
         </header>
+        {isOffline && (
+          <div className="bg-amber-500 text-black px-4 py-1.5 text-center text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
+            <span>You are currently working offline. Cached study notes and saved materials remain available.</span>
+          </div>
+        )}
         <main id="main" className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10">{children}</main>
       </div>
       <nav className="glass fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile">
