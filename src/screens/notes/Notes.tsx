@@ -108,7 +108,7 @@ export default function Notes() {
 
       {tab === "generate" && (
         <div className="grid gap-6 xl:grid-cols-[26rem_1fr]">
-          <Card className="h-fit space-y-5 p-5">
+          <Card data-tour="notes-panel" className="h-fit space-y-5 p-5">
             <Field label="Source"><Tabs value={source} onChange={setSource} tabs={[{ id: "topic", label: "Topic" }, { id: "text", label: "Paste text" }, { id: "file", label: "Upload" }]} /></Field>
             <Field label="Subject"><select className="input" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); }}>{state.subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
             {source === "topic" && (<>

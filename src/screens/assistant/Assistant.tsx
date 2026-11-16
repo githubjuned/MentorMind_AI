@@ -225,7 +225,7 @@ export default function Assistant() {
 
         <footer className="border-t border-line p-3 sm:p-4">
           {attach && <div className="mb-2"><Badge tone="brand"><Paperclip className="h-3 w-3" />{attach.name}<button aria-label="Remove attachment" onClick={() => setAttach(null)}><X className="h-3 w-3" /></button></Badge>{!attach.text && <span className="ml-2 text-[11px] text-muted">PDF/DOCX text can&apos;t be read in the demo; the topic in your message is used.</span>}</div>}
-          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
+          <form data-tour="assistant-input" onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
             <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
             <Button type="button" variant="secondary" icon={Paperclip} onClick={() => fileRef.current?.click()} aria-label="Attach file" />
             <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} rows={1} placeholder="Ask a doubt, request notes, a quiz, a plan…" className="input max-h-32 min-h-[44px] resize-none" aria-label="Message" />

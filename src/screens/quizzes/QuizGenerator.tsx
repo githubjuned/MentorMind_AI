@@ -51,7 +51,7 @@ export default function QuizGenerator() {
         </Card>
       )}
       <div className="grid gap-6 lg:grid-cols-[28rem_1fr]">
-        <Card className="h-fit space-y-5 p-5">
+        <Card data-tour="quiz-start" className="h-fit space-y-5 p-5">
           <Field label="Subject"><select className="input" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); }}>{state.subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
           <Field label="Topic"><select className="input" value={topicId} onChange={(e) => setTopicId(e.target.value)}><option value="">Whole subject / custom topic</option>{topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
           {!topicId && <Field label="Custom topic (optional)" hint="Unknown topics fall back to questions from the selected subject."><input className="input" value={topicText} onChange={(e) => setTopicText(e.target.value)} placeholder="e.g. database normalization" /></Field>}

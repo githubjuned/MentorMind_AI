@@ -59,7 +59,7 @@ export default function Dashboard() {
           <p className="eyebrow">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
           <h1 className="mt-2 font-display text-3xl font-bold leading-tight sm:text-4xl">{greeting()}, {first}! <span className="gradient-text">Ready to learn something new today?</span></h1>
           <p className="mt-3 max-w-xl text-sm text-muted">{m.remaining > 0 ? `You have ${minsLabel(m.remaining)} of study planned for the rest of today.` : m.work.length ? "Today's plan is complete. Great consistency!" : "Nothing planned for today yet. Ask MentorMind to build a plan."}</p>
-          <form onSubmit={(e) => { e.preventDefault(); send(ask); }} className="mt-6 flex gap-2 rounded-2xl border border-line bg-surface/80 p-2 backdrop-blur">
+          <form data-tour="dashboard-ask" onSubmit={(e) => { e.preventDefault(); send(ask); }} className="mt-6 flex gap-2 rounded-2xl border border-line bg-surface/80 p-2 backdrop-blur">
             <AgentIcon id="coordinator" size={40} />
             <input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="Ask MentorMind anything…" className="min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted" aria-label="Ask MentorMind" />
             <Button type="submit" size="sm" icon={Send} disabled={!ask.trim()}>Ask</Button>
@@ -109,7 +109,7 @@ export default function Dashboard() {
           {pendingLater.length > 0 && <div className="mt-3 rounded-xl bg-surface2 p-3 text-xs text-muted"><b className="text-ink">Up next:</b> {pendingLater.map((t) => `${t.title} (${fmtDate(t.date)})`).join(" · ")}</div>}
         </Card>
 
-        <Card className="p-5">
+        <Card data-tour="dashboard-actions" className="p-5">
           <h2 className="mb-4 font-display text-lg font-semibold">Quick actions</h2>
           <div className="grid grid-cols-2 gap-3">
             {ACTIONS.map((a) => (

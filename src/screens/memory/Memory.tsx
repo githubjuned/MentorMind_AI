@@ -47,7 +47,7 @@ export default function Memory() {
       <PageHeader title="My learning memory" subtitle="Everything MentorMind remembers about your learning — what you told it, what it worked out, and what you can change." icon={Brain} color="#8b7bff" eyebrow="Personalisation"
         actions={<><Button variant="secondary" icon={History} onClick={() => setHistory(true)}>View learning history</Button><Button variant="secondary" icon={Pencil} onClick={() => { setDraftStyles(p.styles); setPrefs(true); }}>Edit preferences</Button></>} />
 
-      <Card className="mb-6 grid gap-4 border-brand/30 bg-brand/5 p-5 md:grid-cols-[1fr_auto]">
+      <Card data-tour="memory-vault" className="mb-6 grid gap-4 border-brand/30 bg-brand/5 p-5 md:grid-cols-[1fr_auto]">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-4 text-sm">{(Object.keys(TAG) as (keyof typeof TAG)[]).map((k) => <span key={k} className="flex items-center gap-2"><Tag k={k} /><span className="text-muted">{TAG[k].d}</span></span>)}</div>
           <p className="flex items-start gap-2 text-sm text-muted"><Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" />Your memory stays in this browser. It isn&apos;t shared with other students. Educators only ever see anonymous class-level totals, and only if you allow that in Settings → Privacy.</p>

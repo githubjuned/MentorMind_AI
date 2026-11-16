@@ -59,8 +59,14 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
                 const active = isActive(path, i);
                 return (
                   <li key={i.href}>
-                    <Link href={i.href} onClick={onNavigate} title={collapsed ? i.label : undefined} aria-current={active ? "page" : undefined}
-                      className={cn("group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition", collapsed && "justify-center px-0", active ? "bg-brand/15 text-ink" : "text-muted hover:bg-surface2 hover:text-ink")}>
+                    <Link
+                      href={i.href}
+                      data-tour-nav={i.href.replace("/", "")}
+                      onClick={onNavigate}
+                      title={collapsed ? i.label : undefined}
+                      aria-current={active ? "page" : undefined}
+                      className={cn("group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition", collapsed && "justify-center px-0", active ? "bg-brand/15 text-ink" : "text-muted hover:bg-surface2 hover:text-ink")}
+                    >
                       <i.icon className="h-[18px] w-[18px] shrink-0" style={{ color: active || i.color ? i.color ?? "var(--brand)" : undefined }} aria-hidden />
                       {!collapsed && <span className="truncate">{i.label}</span>}
                       {!collapsed && active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" />}
@@ -222,11 +228,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => update((s) => ({ ...s, settings: { ...s.settings, sidebarCollapsed: !s.settings.sidebarCollapsed } }))}>
             {collapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
           </button>
-          <button onClick={() => setSearch(true)} className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-line bg-surface2 px-3.5 text-sm text-muted transition hover:border-brand/50 sm:max-w-md" aria-label="Open search">
+          <button data-tour="global-search" onClick={() => setSearch(true)} className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-line bg-surface2 px-3.5 text-sm text-muted transition hover:border-brand/50 sm:max-w-md" aria-label="Open search">
             <Search className="h-4 w-4" /><span className="flex-1 truncate text-left">Search pages, notes, topics…</span><kbd className="hidden rounded border border-line px-1.5 text-[10px] sm:block">⌘K</kbd>
           </button>
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <button
+              data-tour="tour-trigger"
               onClick={() => setTourOpen(true)}
               className="flex items-center gap-1.5 rounded-xl border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-brand/20"
               title="Platform Feature Tour"

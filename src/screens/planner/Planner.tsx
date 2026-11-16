@@ -115,7 +115,7 @@ export default function Planner() {
       <SectionTabs items={PLANNER_TABS} />
       <div className="grid gap-6 xl:grid-cols-[26rem_1fr]">
         <div className="space-y-6">
-          <Card className="space-y-4 p-5">
+          <Card data-tour="planner-view" className="space-y-4 p-5">
             <h2 className="flex items-center gap-2 font-display text-base font-semibold"><Wand2 className="h-4 w-4 text-ok" />Generate a plan</h2>
             {entries.map((e, i) => {
               const tops = state.topics.filter((t) => t.subjectId === e.subjectId);

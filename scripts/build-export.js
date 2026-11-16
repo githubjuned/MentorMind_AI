@@ -16,7 +16,7 @@ try {
   console.log("Building static export for Firebase Hosting with Webpack...");
   execSync("npx next build --webpack", {
     stdio: "inherit",
-    env: { ...process.env, NEXT_EXPORT: "true" },
+    env: { ...process.env, NEXT_EXPORT: "true", NEXT_CPU_COUNT: "1" },
   });
   console.log("Static export successfully built into /out");
 } finally {

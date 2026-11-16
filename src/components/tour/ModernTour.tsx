@@ -1,419 +1,494 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
-  Brain,
-  CalendarClock,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  GraduationCap,
-  Lightbulb,
-  ListChecks,
-  NotebookPen,
-  Play,
-  RotateCcw,
   Sparkles,
+  ChevronRight,
+  ChevronLeft,
   X,
-  Zap,
+  CheckCircle2,
+  Circle,
+  HelpCircle,
+  ExternalLink,
+  Layers,
+  ArrowRight,
+  Minus,
+  Maximize2,
 } from "lucide-react";
-import { Badge, Button, Modal, Ring, cn } from "@/components/common/ui";
 import { useApp } from "@/hooks/useApp";
+
+interface TourStep {
+  id: string;
+  number: number;
+  title: string;
+  checklistLabel: string;
+  route: string;
+  primarySelector: string;
+  fallbackSelector: string;
+  description: string;
+  benefitBadge: string;
+}
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    id: "dashboard",
+    number: 1,
+    title: "AI Command Center & Quick Ask",
+    checklistLabel: "Home Dashboard & Ask AI",
+    route: "/dashboard",
+    primarySelector: '[data-tour="dashboard-ask"]',
+    fallbackSelector: '[data-tour-nav="dashboard"]',
+    description:
+      "Type any concept, equation, or syllabus doubt right here. The central coordinator analyzes your prompt and instantly routes it to the most qualified specialist AI agent.",
+    benefitBadge: "Step 1 of 6 · Quick AI Input",
+  },
+  {
+    id: "assistant",
+    number: 2,
+    title: "The AI Multi-Agent Classroom",
+    checklistLabel: "AI Multi-Agent Classroom",
+    route: "/assistant",
+    primarySelector: '[data-tour="assistant-input"]',
+    fallbackSelector: '[data-tour-nav="assistant"]',
+    description:
+      "You are now in the live AI Classroom! Socratic Coach, Concept Explainer, Exam Crammer, and Formula Assistant collaborate to break down difficult topics with guided hints.",
+    benefitBadge: "Step 2 of 6 · Socratic Tutoring",
+  },
+  {
+    id: "notes",
+    number: 3,
+    title: "Smart Study Notes & Summaries",
+    checklistLabel: "Smart Notes & Summaries",
+    route: "/notes",
+    primarySelector: '[data-tour="notes-panel"]',
+    fallbackSelector: '[data-tour-nav="notes"]',
+    description:
+      "Convert lecture transcripts, textbook passages, or syllabus units into structured revision sheets, key takeaways, and flashcards with instant Markdown and PDF exports.",
+    benefitBadge: "Step 3 of 6 · Knowledge Synthesis",
+  },
+  {
+    id: "quizzes",
+    number: 4,
+    title: "Adaptive Practice Quizzes",
+    checklistLabel: "Adaptive Quiz Drills",
+    route: "/quizzes",
+    primarySelector: '[data-tour="quiz-start"]',
+    fallbackSelector: '[data-tour-nav="quizzes"]',
+    description:
+      "Generate instant self-grading practice quizzes in multiple choice, true/false, fill-in-the-blank, or short answer formats. Questions adapt to your target difficulty level.",
+    benefitBadge: "Step 4 of 6 · Active Recall",
+  },
+  {
+    id: "planner",
+    number: 5,
+    title: "Spaced Repetition Study Planner",
+    checklistLabel: "Study Planner & Calendar",
+    route: "/planner",
+    primarySelector: '[data-tour="planner-view"]',
+    fallbackSelector: '[data-tour-nav="planner"]',
+    description:
+      "Never cram last minute again. Set your exam dates and daily study hours, and let MentorMind build an optimized spaced repetition schedule that resurfaces weak topics.",
+    benefitBadge: "Step 5 of 6 · Spaced Planning",
+  },
+  {
+    id: "memory",
+    number: 6,
+    title: "Your Transparent Memory Vault",
+    checklistLabel: "Transparent Memory Vault",
+    route: "/memory",
+    primarySelector: '[data-tour="memory-vault"]',
+    fallbackSelector: '[data-tour-nav="memory"]',
+    description:
+      "You have 100% control over what AI remembers. Inspect inferred topic mastery, review stored preferences, edit learning goals, or purge your memory records at any time.",
+    benefitBadge: "Step 6 of 6 · Complete Privacy",
+  },
+];
 
 interface ModernTourProps {
   open: boolean;
   onClose: () => void;
 }
 
-export function ModernTour({ open, onClose }: ModernTourProps) {
-  const { state, update } = useApp();
-  const router = useRouter();
-  const [step, setStep] = useState(0);
+interface TargetRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
 
-  // Interactive state for mini-demos
-  const [selectedAgentChip, setSelectedAgentChip] = useState("Explain Python Loops");
-  const [selectedStyle, setSelectedStyle] = useState<"step" | "example" | "concept">("example");
-  const [quizAnswer, setQuizAnswer] = useState<string | null>(null);
+export function ModernTour({ open, onClose }: ModernTourProps) {
+  const { update } = useApp();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [stepIndex, setStepIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+  const [checklistMinimized, setChecklistMinimized] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const currentStep = TOUR_STEPS[stepIndex];
+
+  // Complete tour handler
+  const handleFinish = useCallback(() => {
+    update((s) => ({ ...s, tourCompleted: true }));
+    onClose();
+  }, [update, onClose]);
+
+  // Measure element location on live screen
+  const updateTargetPosition = useCallback(() => {
+    if (!open) return;
+
+    const step = TOUR_STEPS[stepIndex];
+    if (!step) return;
+
+    let el = document.querySelector(step.primarySelector) as HTMLElement | null;
+    if (!el) {
+      el = document.querySelector(step.fallbackSelector) as HTMLElement | null;
+    }
+
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      // Ensure element is visible in viewport
+      if (rect.width > 0 && rect.height > 0) {
+        setTargetRect({
+          top: Math.max(0, rect.top),
+          left: Math.max(0, rect.left),
+          width: rect.width,
+          height: rect.height,
+        });
+        return;
+      }
+    }
+
+    // Fallback: If not found yet, default to center of viewport
+    const fallbackWidth = Math.min(window.innerWidth * 0.7, 500);
+    const fallbackHeight = 160;
+    setTargetRect({
+      top: (window.innerHeight - fallbackHeight) / 2,
+      left: (window.innerWidth - fallbackWidth) / 2,
+      width: fallbackWidth,
+      height: fallbackHeight,
+    });
+  }, [open, stepIndex]);
+
+  // Navigate & shift live screen when step changes
+  const goToStep = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= TOUR_STEPS.length) return;
+      const targetStep = TOUR_STEPS[index];
+      setStepIndex(index);
+
+      // Check if we need to shift to another live page
+      if (pathname !== targetStep.route) {
+        setIsNavigating(true);
+        router.push(targetStep.route);
+
+        // Allow route transition to settle and measure new element
+        setTimeout(() => {
+          setIsNavigating(false);
+          let attempts = 0;
+          const poll = setInterval(() => {
+            attempts++;
+            const el =
+              document.querySelector(targetStep.primarySelector) ||
+              document.querySelector(targetStep.fallbackSelector);
+            if (el || attempts > 12) {
+              clearInterval(poll);
+              if (el) {
+                (el as HTMLElement).scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }
+              setTimeout(updateTargetPosition, 150);
+            }
+          }, 80);
+        }, 120);
+      } else {
+        // Already on page, scroll element into view
+        const el =
+          document.querySelector(targetStep.primarySelector) ||
+          document.querySelector(targetStep.fallbackSelector);
+        if (el) {
+          (el as HTMLElement).scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+        setTimeout(updateTargetPosition, 100);
+      }
+    },
+    [pathname, router, updateTargetPosition]
+  );
+
+  // Initialize or step change positioning
+  useEffect(() => {
+    if (!open) return;
+    goToStep(stepIndex);
+  }, [open]);
+
+  // Window resize & scroll listeners to keep spotlight glued to element
+  useEffect(() => {
+    if (!open) return;
+    const handleScrollResize = () => {
+      requestAnimationFrame(updateTargetPosition);
+    };
+
+    window.addEventListener("resize", handleScrollResize);
+    window.addEventListener("scroll", handleScrollResize, true);
+    return () => {
+      window.removeEventListener("resize", handleScrollResize);
+      window.removeEventListener("scroll", handleScrollResize, true);
+    };
+  }, [open, updateTargetPosition]);
 
   if (!open) return null;
 
-  const handleFinish = (targetHref?: string) => {
-    update((s) => ({ ...s, tourCompleted: true }));
-    onClose();
-    if (targetHref) {
-      router.push(targetHref);
+  // Calculate Tooltip position and pointer beak orientation
+  const PADDING = 8;
+  const spotTop = (targetRect?.top ?? 200) - PADDING;
+  const spotLeft = (targetRect?.left ?? 200) - PADDING;
+  const spotWidth = (targetRect?.width ?? 300) + PADDING * 2;
+  const spotHeight = (targetRect?.height ?? 100) + PADDING * 2;
+
+  // Decide tooltip placement
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const screenWidth = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const screenHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+
+  let tooltipStyle: React.CSSProperties = {};
+  let arrowClass = "";
+
+  if (isMobile) {
+    // Docked at bottom for mobile clarity
+    tooltipStyle = {
+      bottom: 24,
+      left: 16,
+      right: 16,
+      maxWidth: "calc(100vw - 32px)",
+    };
+  } else {
+    // Desktop: position adjacent to spotlight box
+    const spaceRight = screenWidth - (spotLeft + spotWidth);
+    const spaceLeft = spotLeft;
+    const spaceBottom = screenHeight - (spotTop + spotHeight);
+
+    if (spaceRight >= 360) {
+      // Place to the RIGHT of element, arrow points LEFT
+      tooltipStyle = {
+        top: Math.max(20, Math.min(spotTop, screenHeight - 260)),
+        left: spotLeft + spotWidth + 18,
+        maxWidth: 380,
+      };
+      arrowClass = "arrow-left";
+    } else if (spaceLeft >= 360) {
+      // Place to the LEFT of element, arrow points RIGHT
+      tooltipStyle = {
+        top: Math.max(20, Math.min(spotTop, screenHeight - 260)),
+        left: Math.max(16, spotLeft - 398),
+        maxWidth: 380,
+      };
+      arrowClass = "arrow-right";
+    } else if (spaceBottom >= 220) {
+      // Place BELOW element, arrow points UP
+      tooltipStyle = {
+        top: spotTop + spotHeight + 18,
+        left: Math.max(20, Math.min(spotLeft, screenWidth - 400)),
+        maxWidth: 380,
+      };
+      arrowClass = "arrow-up";
+    } else {
+      // Place ABOVE element, arrow points DOWN
+      tooltipStyle = {
+        top: Math.max(20, spotTop - 240),
+        left: Math.max(20, Math.min(spotLeft, screenWidth - 400)),
+        maxWidth: 380,
+      };
+      arrowClass = "arrow-down";
     }
-  };
-
-  const steps = [
-    {
-      id: "coordinator",
-      tag: "Central Intelligence",
-      title: "Meet Your AI Coordinator",
-      subtitle:
-        "The central coordinator understands your plain-English requests and routes them to 7 specialized agents.",
-      icon: Sparkles,
-      color: "#8b7bff",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-line bg-surface2/60 p-4">
-          <p className="text-xs font-semibold text-muted">Tap an example request to see dynamic agent routing:</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { text: "Explain Python Loops", agent: "AI Doubt Solver", color: "#22d3ee" },
-              { text: "Create DBMS Quiz", agent: "Quiz Generator", color: "#fb7185" },
-              { text: "Draft Exam Schedule", agent: "Study Planner", color: "#34d399" },
-              { text: "Summarize Lecture PDF", agent: "Smart Notes", color: "#fbbf24" },
-            ].map((chip) => (
-              <button
-                key={chip.text}
-                type="button"
-                onClick={() => setSelectedAgentChip(chip.text)}
-                className={cn(
-                  "chip transition-all",
-                  selectedAgentChip === chip.text ? "chip-on font-bold" : ""
-                )}
-              >
-                {chip.text}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface p-3 text-xs">
-            <span className="text-muted">Detected Intent:</span>
-            <span className="font-semibold text-ink">
-              {selectedAgentChip.includes("Quiz")
-                ? "Quiz Generation"
-                : selectedAgentChip.includes("Schedule")
-                ? "Study Schedule Planning"
-                : selectedAgentChip.includes("PDF")
-                ? "Document Note Extraction"
-                : "Conceptual Doubt Solving"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-xl bg-brand/10 p-2.5 text-xs text-brand">
-            <Sparkles className="h-4 w-4 shrink-0" />
-            <span>
-              Routed to:{" "}
-              <b>
-                {selectedAgentChip.includes("Quiz")
-                  ? "Quiz Generation Agent"
-                  : selectedAgentChip.includes("Schedule")
-                  ? "Smart Study Planner Agent"
-                  : selectedAgentChip.includes("PDF")
-                  ? "Notes Generation Agent"
-                  : "AI Doubt Solver Agent"}
-              </b>
-            </span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "doubt",
-      tag: "Deep Understanding",
-      title: "AI Doubt Solver",
-      subtitle:
-        "Instant, step-by-step explanations tailored to your preferred learning format and difficulty level.",
-      icon: Lightbulb,
-      color: "#22d3ee",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-line bg-surface2/60 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Try explanation format:</span>
-            <div className="flex gap-1.5">
-              {[
-                { id: "example", label: "Practical" },
-                { id: "step", label: "Step-by-Step" },
-                { id: "concept", label: "Conceptual" },
-              ].map((fmt) => (
-                <button
-                  key={fmt.id}
-                  type="button"
-                  onClick={() => setSelectedStyle(fmt.id as "step" | "example" | "concept")}
-                  className={cn(
-                    "rounded-lg px-2.5 py-1 text-xs font-medium transition",
-                    selectedStyle === fmt.id
-                      ? "bg-brand2 text-black font-bold"
-                      : "bg-surface text-muted hover:text-ink"
-                  )}
-                >
-                  {fmt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-line bg-surface p-3 text-xs text-muted">
-            {selectedStyle === "example" && (
-              <p>
-                <b className="text-ink">Real-world Analogy:</b> Think of a loop like an assembly line
-                inspection. For each parcel on the conveyor belt, inspect and stamp it until no parcels remain.
-              </p>
-            )}
-            {selectedStyle === "step" && (
-              <ol className="list-decimal space-y-1 pl-4 text-ink">
-                <li>Initialize loop variable counter.</li>
-                <li>Evaluate condition: true or false?</li>
-                <li>Execute statement block.</li>
-                <li>Update iterator and repeat.</li>
-              </ol>
-            )}
-            {selectedStyle === "concept" && (
-              <p>
-                <b className="text-ink">Core Definition:</b> Loops provide program control flow to repeat a
-                block of statements deterministically or conditionally, reducing boilerplate repetition.
-              </p>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "notes",
-      tag: "Knowledge Synthesis",
-      title: "Smart Notes Generator",
-      subtitle:
-        "Upload PDF/DOCX course materials or type topics to extract organized notes, bullet points, and flashcards.",
-      icon: NotebookPen,
-      color: "#fbbf24",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-line bg-surface2/60 p-4">
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
-              <span className="font-semibold text-amber-400">Concise</span>
-              <p className="mt-1 text-[11px] text-muted">Key takeaways</p>
-            </div>
-            <div className="rounded-xl border border-line bg-surface p-2.5">
-              <span className="font-semibold text-ink">Detailed</span>
-              <p className="mt-1 text-[11px] text-muted">Full outlines</p>
-            </div>
-            <div className="rounded-xl border border-line bg-surface p-2.5">
-              <span className="font-semibold text-ink">Flashcards</span>
-              <p className="mt-1 text-[11px] text-muted">Spaced practice</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted">
-            Every generated note can be edited inline, downloaded as Markdown, or exported to clean PDF.
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: "quizzes",
-      tag: "Active Recall",
-      title: "Adaptive Quiz Generator",
-      subtitle:
-        "Test your mastery with instant scoring, step-by-step explanations, and automated mistake tracking.",
-      icon: ListChecks,
-      color: "#fb7185",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-line bg-surface2/60 p-4">
-          <p className="text-xs font-semibold text-ink">
-            Quick Check: Which normal form removes partial functional dependencies on a composite primary key?
-          </p>
-          <div className="grid gap-2">
-            {[
-              { id: "1nf", label: "1NF (First Normal Form)", correct: false },
-              { id: "2nf", label: "2NF (Second Normal Form)", correct: true },
-              { id: "3nf", label: "3NF (Third Normal Form)", correct: false },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setQuizAnswer(opt.id)}
-                className={cn(
-                  "flex items-center justify-between rounded-xl border px-3 py-2 text-left text-xs transition",
-                  quizAnswer === opt.id
-                    ? opt.correct
-                      ? "border-ok bg-ok/15 text-ok font-semibold"
-                      : "border-bad bg-bad/15 text-bad font-semibold"
-                    : "border-line bg-surface hover:border-brand/40 text-muted hover:text-ink"
-                )}
-              >
-                <span>{opt.label}</span>
-                {quizAnswer === opt.id && (
-                  <span>{opt.correct ? "✓ Correct!" : "✗ Review 2NF"}</span>
-                )}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-muted">
-            Incorrect answers automatically enter your Revision queue so you master them before exams.
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: "planner",
-      tag: "Goal Oriented",
-      title: "Smart Study Planner & Routine",
-      subtitle:
-        "Input your exam dates and available study hours. MentorMind schedules balanced daily timetables and breaks.",
-      icon: CalendarClock,
-      color: "#34d399",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-line bg-surface2/60 p-4 text-xs">
-          <div className="flex items-center justify-between rounded-xl bg-surface p-3">
-            <div>
-              <p className="font-semibold text-ink">Daily Study Target</p>
-              <p className="text-[11px] text-muted">Configured in Profile</p>
-            </div>
-            <Badge tone="brand">{state.profile.dailyMinutes} mins / day</Badge>
-          </div>
-          <div className="flex items-center gap-2 text-muted">
-            <CheckCircle2 className="h-4 w-4 text-ok shrink-0" />
-            <span>Interactive daily routine with Pomodoro-friendly breaks</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted">
-            <CheckCircle2 className="h-4 w-4 text-ok shrink-0" />
-            <span>Spaced-repetition revision schedules based on forgetting curves</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "telemetry",
-      tag: "Real Learning Telemetry",
-      title: "Real Progress, Zero Dummy Data",
-      subtitle:
-        "MentorMind tracks your real learning sessions, quizzes, notes, and habits directly in your private Firebase database.",
-      icon: Brain,
-      color: "#a78bfa",
-      renderInteractive: () => (
-        <div className="space-y-3 rounded-2xl border border-brand/30 bg-brand/5 p-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/20 text-brand">
-            <Zap className="h-6 w-6" />
-          </div>
-          <h4 className="font-display font-semibold text-ink">You are starting with a clean slate</h4>
-          <p className="text-xs text-muted max-w-sm mx-auto">
-            No pre-baked dummy scores or fictional history. As you ask questions, take quizzes, and study,
-            your genuine mastery curve will be rendered in real-time.
-          </p>
-          <div className="pt-2 flex flex-wrap justify-center gap-2">
-            <Button size="sm" onClick={() => handleFinish("/doubt-solver")}>
-              Ask a Doubt
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => handleFinish("/quizzes")}>
-              Take a Quiz
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => handleFinish("/planner")}>
-              Plan Studies
-            </Button>
-          </div>
-        </div>
-      ),
-    },
-  ];
-
-  const current = steps[step];
-  const Icon = current.icon;
+  }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[9999] pointer-events-none select-none">
+      {/* 1. Spotlight Cutout Box with 9999px Dark Overlay Backdrop */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
-        onClick={() => handleFinish()}
-      />
+        className="fixed z-[10000] rounded-2xl pointer-events-none transition-all duration-400 ease-out"
+        style={{
+          top: `${spotTop}px`,
+          left: `${spotLeft}px`,
+          width: `${spotWidth}px`,
+          height: `${spotHeight}px`,
+          border: "2px dashed #c084fc", // Purple dashed border matching Mercury reference
+          boxShadow:
+            "0 0 0 9999px rgba(10, 12, 22, 0.78), 0 0 30px rgba(168, 85, 247, 0.75)",
+        }}
+      >
+        {/* Pulsating Beacon Target Indicator in Spotlight Corner */}
+        <div className="absolute -top-3.5 -left-3.5 flex items-center gap-1.5 rounded-full bg-violet-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-lg border border-violet-300">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-300 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+          </span>
+          Step {currentStep.number}
+        </div>
+      </div>
 
-      {/* Modal Dialog Card */}
-      <div className="anim-fade-up relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-line bg-surface shadow-2xl">
-        {/* Top Gradient Ribbon */}
-        <div
-          className="h-1.5 w-full transition-all duration-300"
-          style={{ background: current.color }}
-        />
+      {/* 2. Checklist Progress Drawer (Inspired by Reference Image 3) */}
+      <div
+        className={`fixed left-4 bottom-4 z-[10002] pointer-events-auto hidden md:block rounded-2xl border border-line bg-card/95 p-4 shadow-2xl backdrop-blur-md transition-all duration-300 ${
+          checklistMinimized ? "w-64" : "w-80"
+        }`}
+      >
+        <div className="flex items-center justify-between pb-2 border-b border-line">
+          <div>
+            <h4 className="font-display text-xs font-bold text-ink">
+              Interactive Product Tour
+            </h4>
+            {!checklistMinimized && (
+              <p className="text-[10px] text-muted">
+                Shifting live screens & active buttons
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => setChecklistMinimized(!checklistMinimized)}
+            className="rounded-lg p-1 text-muted hover:bg-surface2 hover:text-ink transition"
+            title={checklistMinimized ? "Expand Checklist" : "Minimize"}
+          >
+            {checklistMinimized ? (
+              <Maximize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Minus className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
 
-        <div className="p-6 sm:p-8">
-          {/* Header Row */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span
-                className="flex h-12 w-12 items-center justify-center rounded-2xl transition-colors"
-                style={{ background: `${current.color}22`, color: current.color }}
-              >
-                <Icon className="h-6 w-6" />
-              </span>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
-                  {current.tag}
-                </span>
-                <h3 className="font-display text-xl font-bold text-ink sm:text-2xl">
-                  {current.title}
-                </h3>
-              </div>
-            </div>
+        {!checklistMinimized && (
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {TOUR_STEPS.map((s, idx) => {
+              const isPast = idx < stepIndex;
+              const isCurrent = idx === stepIndex;
+              return (
+                <li key={s.id}>
+                  <button
+                    onClick={() => goToStep(idx)}
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition ${
+                      isCurrent
+                        ? "bg-violet-600/15 text-violet-600 font-bold border border-violet-400/40"
+                        : isPast
+                        ? "text-muted hover:text-ink hover:bg-surface2"
+                        : "text-muted/60 hover:text-ink hover:bg-surface2"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        isPast
+                          ? "bg-emerald-500 text-white"
+                          : isCurrent
+                          ? "bg-violet-600 text-white animate-pulse"
+                          : "bg-surface2 text-muted"
+                      }`}
+                    >
+                      {isPast ? "✓" : s.number}
+                    </span>
+                    <span className="truncate flex-1">{s.checklistLabel}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
+      {/* 3. The Purple Speech Bubble Tooltip (Matches Reference Image 1 & 2) */}
+      <div
+        className="fixed z-[10003] pointer-events-auto transition-all duration-300 ease-out"
+        style={tooltipStyle}
+      >
+        <div className="relative rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 p-6 text-white shadow-2xl shadow-purple-950/70 border border-white/20">
+          {/* Directional Pointer Arrow / Beak */}
+          {arrowClass === "arrow-left" && (
+            <div className="absolute top-7 -left-2.5 h-0 w-0 border-y-8 border-y-transparent border-r-8 border-r-violet-600" />
+          )}
+          {arrowClass === "arrow-right" && (
+            <div className="absolute top-7 -right-2.5 h-0 w-0 border-y-8 border-y-transparent border-l-8 border-l-violet-600" />
+          )}
+          {arrowClass === "arrow-up" && (
+            <div className="absolute -top-2.5 left-8 h-0 w-0 border-x-8 border-x-transparent border-b-8 border-b-violet-600" />
+          )}
+          {arrowClass === "arrow-down" && (
+            <div className="absolute -bottom-2.5 left-8 h-0 w-0 border-x-8 border-x-transparent border-t-8 border-t-indigo-700" />
+          )}
+
+          {/* Top Bar: Badge & Close */}
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white backdrop-blur">
+              {currentStep.benefitBadge}
+            </span>
             <button
-              type="button"
-              onClick={() => handleFinish()}
-              className="rounded-xl p-1.5 text-muted transition hover:bg-surface2 hover:text-ink"
-              aria-label="Close tour"
+              onClick={handleFinish}
+              className="rounded-lg p-1 text-white/70 hover:bg-white/10 hover:text-white transition"
+              aria-label="Skip tour"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Subtitle */}
-          <p className="mt-3 text-sm leading-relaxed text-muted">{current.subtitle}</p>
+          {/* Title */}
+          <h3 className="mt-2.5 font-display text-base sm:text-lg font-bold text-white leading-snug">
+            {currentStep.title}
+          </h3>
 
-          {/* Interactive Demo Body */}
-          <div className="mt-5">{current.renderInteractive()}</div>
+          {/* Description */}
+          <p className="mt-1.5 text-xs text-purple-100 leading-relaxed font-normal">
+            {currentStep.description}
+          </p>
 
-          {/* Footer Navigation */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-            {/* Step Indicators / Dots */}
-            <div className="flex items-center gap-1.5">
-              {steps.map((s, idx) => (
+          {/* Actions Bar */}
+          <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/15">
+            {/* Prev Button */}
+            <div>
+              {stepIndex > 0 ? (
                 <button
-                  key={s.id}
                   type="button"
-                  onClick={() => setStep(idx)}
-                  className={cn(
-                    "h-2 rounded-full transition-all",
-                    step === idx
-                      ? "w-6 bg-brand"
-                      : "w-2 bg-surface2 hover:bg-muted"
-                  )}
-                  aria-label={`Jump to step ${idx + 1}`}
-                />
-              ))}
-              <span className="ml-2 text-xs text-muted">
-                {step + 1} of {steps.length}
-              </span>
+                  onClick={() => goToStep(stepIndex - 1)}
+                  className="flex items-center gap-1 text-xs font-semibold text-white/80 hover:text-white transition"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  className="text-[11px] text-white/70 hover:text-white transition underline"
+                >
+                  Skip Tour
+                </button>
+              )}
             </div>
 
-            {/* Prev / Next Buttons */}
-            <div className="flex items-center gap-2">
-              {step > 0 ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setStep((s) => s - 1)}
-                  icon={ChevronLeft}
-                >
-                  Previous
-                </Button>
-              ) : (
-                <Button size="sm" variant="ghost" onClick={() => handleFinish()}>
-                  Skip tour
-                </Button>
-              )}
-
-              {step < steps.length - 1 ? (
-                <Button
-                  size="sm"
-                  onClick={() => setStep((s) => s + 1)}
+            {/* Next / Finish Button (White pill button like in reference images) */}
+            <div>
+              {stepIndex < TOUR_STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => goToStep(stepIndex + 1)}
+                  className="flex items-center gap-1 rounded-xl bg-white px-5 py-2 text-xs font-bold uppercase tracking-wider text-purple-700 shadow-lg hover:bg-purple-50 transition active:scale-95"
                 >
                   Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
               ) : (
-                <Button size="sm" onClick={() => handleFinish("/dashboard")}>
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-400 px-5 py-2 text-xs font-bold uppercase tracking-wider text-slate-950 shadow-lg hover:bg-emerald-300 transition active:scale-95"
+                >
                   Start Learning
-                  <Play className="h-3.5 w-3.5 ml-1.5" />
-                </Button>
+                  <Sparkles className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
           </div>
