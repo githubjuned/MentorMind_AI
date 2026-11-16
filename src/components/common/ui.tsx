@@ -148,12 +148,65 @@ export function Avatar({ name, color = "#8b7bff", image, size = 36 }: { name: st
 export const Skeleton = ({ className }: { className?: string }) => <div className={cn("skeleton", className)} />;
 
 /* ------------------------------------------------------------------ Form pieces */
-export function Field({ label, hint, error, children, className }: { label?: string; hint?: string; error?: string; children: ReactNode; className?: string }) {
+export function Field({
+  label,
+  hint,
+  error,
+  count,
+  maxCount,
+  limitReached,
+  limitMessage,
+  children,
+  className,
+}: {
+  label?: string;
+  hint?: string;
+  error?: string;
+  count?: number;
+  maxCount?: number;
+  limitReached?: boolean;
+  limitMessage?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const atLimit = (maxCount != null && count != null && count >= maxCount) || limitReached;
+  const nearLimit = maxCount != null && count != null && !atLimit && count >= maxCount * 0.8;
+
   return (
     <div className={className}>
-      {label && <label className="label">{label}</label>}
+      {label && (
+        <div className="mb-1.5 flex items-center justify-between">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</label>
+          {maxCount != null && count != null && (
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "font-mono text-[11px] font-semibold transition-colors duration-150",
+                  atLimit ? "text-bad font-bold" : nearLimit ? "text-warn" : "text-muted/70"
+                )}
+              >
+                {count}/{maxCount}
+              </span>
+              {atLimit && (
+                <span className="rounded-md border border-bad/30 bg-bad/15 px-1.5 py-0.5 text-[10px] font-semibold text-bad transition-all">
+                  Limit reached
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {children}
-      {error ? <p role="alert" className="mt-1.5 text-xs font-medium text-bad">{error}</p> : hint ? <p className="mt-1.5 text-xs text-muted">{hint}</p> : null}
+      {limitMessage && atLimit ? (
+        <p role="status" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-bad transition-all">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-bad animate-ping" />
+          {limitMessage}
+        </p>
+      ) : error ? (
+        <p role="alert" className="mt-1.5 text-xs font-medium text-bad">{error}</p>
+      ) : hint ? (
+        <p className="mt-1.5 text-xs text-muted">{hint}</p>
+      ) : null}
     </div>
   );
 }

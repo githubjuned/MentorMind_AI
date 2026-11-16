@@ -7,10 +7,17 @@ import { AuthShell } from "@/components/forms/AuthShell";
 import { Button, Field, useToast } from "@/components/common/ui";
 import { GoogleIcon } from "@/components/common/GoogleIcon";
 import { useApp } from "@/hooks/useApp";
+import { cn } from "@/utils";
 
 export const DEPARTMENTS = ["AI & DS", "Computer Science", "Information Technology", "Electronics & Communication", "Mechanical", "Civil", "Business", "Other"];
 export const YEARS = ["First Year", "Second Year", "Third Year", "Fourth Year", "Postgraduate"];
 const strength = (p: string) => [p.length >= 8, /[A-Z]/.test(p), /[0-9]/.test(p), /[^A-Za-z0-9]/.test(p)].filter(Boolean).length;
+
+const NAME_MAX = 40;
+const EMAIL_MAX = 50;
+const PASSWORD_MAX = 32;
+const INSTITUTION_MAX = 60;
+const GOALS_MAX = 200;
 
 export default function Signup() {
   const { signup, loginGoogle } = useApp();
@@ -20,7 +27,50 @@ export default function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const [limitAlert, setLimitAlert] = useState<string | null>(null);
+
+  const triggerLimitAlert = (fieldName: string) => {
+    setLimitAlert(fieldName);
+    setTimeout(() => {
+      setLimitAlert((cur) => (cur === fieldName ? null : cur));
+    }, 2500);
+  };
+
+  const handleFieldChange = (
+    key: keyof typeof f,
+    val: string,
+    max: number
+  ) => {
+    if (val.length > max) {
+      setF((p) => ({ ...p, [key]: val.slice(0, max) }));
+      triggerLimitAlert(key);
+    } else {
+      setF((p) => ({ ...p, [key]: val }));
+      if (val.length === max) {
+        triggerLimitAlert(key);
+      } else if (limitAlert === key) {
+        setLimitAlert(null);
+      }
+    }
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    currentVal: string,
+    max: number,
+    fieldName: string
+  ) => {
+    if (
+      currentVal.length >= max &&
+      e.key.length === 1 &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey
+    ) {
+      e.preventDefault();
+      triggerLimitAlert(fieldName);
+    }
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -90,41 +140,166 @@ export default function Signup() {
       </div>
 
       <form onSubmit={submit} className="grid gap-5 sm:grid-cols-2" noValidate>
-        <Field label="Full name" error={errors.name}>
-          <input className="input" autoComplete="name" value={f.name} onChange={set("name")} placeholder="Alex Morgan" />
+        {/* Full Name / Username */}
+        <Field
+          label="Full name / Username"
+          error={errors.name}
+          count={f.name.length}
+          maxCount={NAME_MAX}
+          limitReached={f.name.length >= NAME_MAX}
+          limitMessage={limitAlert === "name" ? `Maximum ${NAME_MAX} characters allowed.` : undefined}
+        >
+          <input
+            className={cn(
+              "input transition-all",
+              f.name.length >= NAME_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            autoComplete="name"
+            maxLength={NAME_MAX}
+            value={f.name}
+            onKeyDown={(e) => handleKeyDown(e, f.name, NAME_MAX, "name")}
+            onChange={(e) => handleFieldChange("name", e.target.value, NAME_MAX)}
+            placeholder="Alex Morgan"
+          />
         </Field>
-        <Field label="Email" error={errors.email}>
-          <input className="input" type="email" autoComplete="email" value={f.email} onChange={set("email")} placeholder="you@university.edu" />
+
+        {/* Email */}
+        <Field
+          label="Email"
+          error={errors.email}
+          count={f.email.length}
+          maxCount={EMAIL_MAX}
+          limitReached={f.email.length >= EMAIL_MAX}
+          limitMessage={limitAlert === "email" ? `Maximum ${EMAIL_MAX} characters allowed.` : undefined}
+        >
+          <input
+            className={cn(
+              "input transition-all",
+              f.email.length >= EMAIL_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            type="email"
+            autoComplete="email"
+            maxLength={EMAIL_MAX}
+            value={f.email}
+            onKeyDown={(e) => handleKeyDown(e, f.email, EMAIL_MAX, "email")}
+            onChange={(e) => handleFieldChange("email", e.target.value, EMAIL_MAX)}
+            placeholder="you@university.edu"
+          />
         </Field>
-        <Field label="Password" error={errors.password}>
-          <input className="input" type="password" autoComplete="new-password" value={f.password} onChange={set("password")} />
+
+        {/* Password */}
+        <Field
+          label="Password"
+          error={errors.password}
+          count={f.password.length}
+          maxCount={PASSWORD_MAX}
+          limitReached={f.password.length >= PASSWORD_MAX}
+          limitMessage={limitAlert === "password" ? `Maximum ${PASSWORD_MAX} characters allowed.` : undefined}
+        >
+          <input
+            className={cn(
+              "input transition-all",
+              f.password.length >= PASSWORD_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            type="password"
+            autoComplete="new-password"
+            maxLength={PASSWORD_MAX}
+            value={f.password}
+            onKeyDown={(e) => handleKeyDown(e, f.password, PASSWORD_MAX, "password")}
+            onChange={(e) => handleFieldChange("password", e.target.value, PASSWORD_MAX)}
+          />
           <div className="mt-2 flex gap-1" aria-hidden>
             {[0, 1, 2, 3].map((i) => (
               <span key={i} className="h-1 flex-1 rounded-full" style={{ background: i < s ? ["#fb7185", "#fbbf24", "#38d6ff", "#34d399"][s - 1] : "var(--line)" }} />
             ))}
           </div>
         </Field>
-        <Field label="Confirm password" error={errors.confirm}>
-          <input className="input" type="password" autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
+
+        {/* Confirm password */}
+        <Field
+          label="Confirm password"
+          error={errors.confirm}
+          count={f.confirm.length}
+          maxCount={PASSWORD_MAX}
+          limitReached={f.confirm.length >= PASSWORD_MAX}
+          limitMessage={limitAlert === "confirm" ? `Maximum ${PASSWORD_MAX} characters allowed.` : undefined}
+        >
+          <input
+            className={cn(
+              "input transition-all",
+              f.confirm.length >= PASSWORD_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            type="password"
+            autoComplete="new-password"
+            maxLength={PASSWORD_MAX}
+            value={f.confirm}
+            onKeyDown={(e) => handleKeyDown(e, f.confirm, PASSWORD_MAX, "confirm")}
+            onChange={(e) => handleFieldChange("confirm", e.target.value, PASSWORD_MAX)}
+          />
         </Field>
+
+        {/* Department */}
         <Field label="Department" error={errors.department}>
-          <select className="input" value={f.department} onChange={set("department")}>
+          <select className="input" value={f.department} onChange={(e) => setF((p) => ({ ...p, department: e.target.value }))}>
             <option value="">Select department</option>
             {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
           </select>
         </Field>
+
+        {/* Academic year */}
         <Field label="Academic year" error={errors.year}>
-          <select className="input" value={f.year} onChange={set("year")}>
+          <select className="input" value={f.year} onChange={(e) => setF((p) => ({ ...p, year: e.target.value }))}>
             <option value="">Select year</option>
             {YEARS.map((d) => <option key={d}>{d}</option>)}
           </select>
         </Field>
-        <Field label="Institution" error={errors.institution} className="sm:col-span-2">
-          <input className="input" value={f.institution} onChange={set("institution")} placeholder="Your university or college" />
+
+        {/* Institution */}
+        <Field
+          label="Institution"
+          error={errors.institution}
+          className="sm:col-span-2"
+          count={f.institution.length}
+          maxCount={INSTITUTION_MAX}
+          limitReached={f.institution.length >= INSTITUTION_MAX}
+          limitMessage={limitAlert === "institution" ? `Maximum ${INSTITUTION_MAX} characters allowed.` : undefined}
+        >
+          <input
+            className={cn(
+              "input transition-all",
+              f.institution.length >= INSTITUTION_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            maxLength={INSTITUTION_MAX}
+            value={f.institution}
+            onKeyDown={(e) => handleKeyDown(e, f.institution, INSTITUTION_MAX, "institution")}
+            onChange={(e) => handleFieldChange("institution", e.target.value, INSTITUTION_MAX)}
+            placeholder="Your university or college"
+          />
         </Field>
-        <Field label="Learning goals" error={errors.goals} className="sm:col-span-2">
-          <textarea className="input min-h-24" value={f.goals} onChange={set("goals")} placeholder="e.g. Pass my DBMS exam with 80%+ and learn machine learning basics." />
+
+        {/* Learning goals */}
+        <Field
+          label="Learning goals"
+          error={errors.goals}
+          className="sm:col-span-2"
+          count={f.goals.length}
+          maxCount={GOALS_MAX}
+          limitReached={f.goals.length >= GOALS_MAX}
+          limitMessage={limitAlert === "goals" ? `Maximum ${GOALS_MAX} characters allowed.` : undefined}
+        >
+          <textarea
+            className={cn(
+              "input min-h-24 transition-all",
+              f.goals.length >= GOALS_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+            )}
+            maxLength={GOALS_MAX}
+            value={f.goals}
+            onKeyDown={(e) => handleKeyDown(e, f.goals, GOALS_MAX, "goals")}
+            onChange={(e) => handleFieldChange("goals", e.target.value, GOALS_MAX)}
+            placeholder="e.g. Pass my DBMS exam with 80%+ and learn machine learning basics."
+          />
         </Field>
+
         <div className="sm:col-span-2">
           <Button type="submit" size="lg" className="w-full" disabled={busy || googleBusy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}Create account

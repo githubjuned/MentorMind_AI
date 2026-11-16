@@ -8,8 +8,12 @@ import { Button, Field, Modal, useToast } from "@/components/common/ui";
 import { GoogleIcon } from "@/components/common/GoogleIcon";
 import { useApp } from "@/hooks/useApp";
 import { DEMO_EMAIL, DEMO_PASSWORD } from "@/data/seed";
+import { cn } from "@/utils";
 
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+const EMAIL_MAX = 50;
+const PASSWORD_MAX = 32;
 
 export default function Login() {
   const { login, loginGoogle, loginDemo, resetPassword } = useApp();
@@ -22,11 +26,58 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
+  const [limitAlert, setLimitAlert] = useState<string | null>(null);
+
+  // Forgot password state
   const [forgot, setForgot] = useState(false);
   const [fEmail, setFEmail] = useState("");
   const [fBusy, setFBusy] = useState(false);
   const [fErr, setFErr] = useState("");
   const [fSuccess, setFSuccess] = useState(false);
+
+  const triggerLimitAlert = (fieldName: string) => {
+    setLimitAlert(fieldName);
+    setTimeout(() => {
+      setLimitAlert((cur) => (cur === fieldName ? null : cur));
+    }, 2500);
+  };
+
+  const handleTextChange = (
+    val: string,
+    max: number,
+    setter: (s: string) => void,
+    fieldName: string
+  ) => {
+    if (val.length > max) {
+      setter(val.slice(0, max));
+      triggerLimitAlert(fieldName);
+    } else {
+      setter(val);
+      if (val.length === max) {
+        triggerLimitAlert(fieldName);
+      } else if (limitAlert === fieldName) {
+        setLimitAlert(null);
+      }
+    }
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    currentVal: string,
+    max: number,
+    fieldName: string
+  ) => {
+    if (
+      currentVal.length >= max &&
+      e.key.length === 1 &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey
+    ) {
+      e.preventDefault();
+      triggerLimitAlert(fieldName);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,28 +150,55 @@ export default function Login() {
       </div>
 
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Email" error={errors.email}>
+        {/* Username / Email with live limit indicator */}
+        <Field
+          label="Email / Username"
+          error={errors.email}
+          count={email.length}
+          maxCount={EMAIL_MAX}
+          limitReached={email.length >= EMAIL_MAX}
+          limitMessage={limitAlert === "email" ? `Maximum character limit of ${EMAIL_MAX} reached.` : undefined}
+        >
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted" />
             <input
-              className="input pl-10"
+              className={cn(
+                "input pl-10 transition-all",
+                email.length >= EMAIL_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+              )}
               type="email"
               autoComplete="email"
+              maxLength={EMAIL_MAX}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, email, EMAIL_MAX, "email")}
+              onChange={(e) => handleTextChange(e.target.value, EMAIL_MAX, setEmail, "email")}
               placeholder="you@university.edu"
             />
           </div>
         </Field>
-        <Field label="Password" error={errors.password}>
+
+        {/* Password with live limit indicator */}
+        <Field
+          label="Password"
+          error={errors.password}
+          count={password.length}
+          maxCount={PASSWORD_MAX}
+          limitReached={password.length >= PASSWORD_MAX}
+          limitMessage={limitAlert === "password" ? `Maximum character limit of ${PASSWORD_MAX} reached.` : undefined}
+        >
           <div className="relative">
             <KeyRound className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted" />
             <input
-              className="input px-10"
+              className={cn(
+                "input px-10 transition-all",
+                password.length >= PASSWORD_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+              )}
               type={show ? "text" : "password"}
               autoComplete="current-password"
+              maxLength={PASSWORD_MAX}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, password, PASSWORD_MAX, "password")}
+              onChange={(e) => handleTextChange(e.target.value, PASSWORD_MAX, setPassword, "password")}
               placeholder="Your password"
             />
             <button
@@ -133,6 +211,7 @@ export default function Login() {
             </button>
           </div>
         </Field>
+
         <div className="flex items-center justify-between text-sm">
           <label className="flex cursor-pointer items-center gap-2 text-muted">
             <input
@@ -147,7 +226,7 @@ export default function Login() {
             type="button"
             className="font-semibold text-brand hover:underline"
             onClick={() => {
-              setFEmail(email);
+              setFEmail(email.slice(0, EMAIL_MAX));
               setFErr("");
               setFSuccess(false);
               setForgot(true);
@@ -156,6 +235,7 @@ export default function Login() {
             Forgot password?
           </button>
         </div>
+
         <Button type="submit" size="lg" className="w-full" disabled={busy || googleBusy}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}Log in
         </Button>
@@ -206,13 +286,24 @@ export default function Login() {
             <p className="text-sm text-muted">
               Enter your registered email address and we&apos;ll send you a link to reset your password.
             </p>
-            <Field label="Account email" error={fErr}>
+            <Field
+              label="Account email"
+              error={fErr}
+              count={fEmail.length}
+              maxCount={EMAIL_MAX}
+              limitReached={fEmail.length >= EMAIL_MAX}
+              limitMessage={fEmail.length >= EMAIL_MAX ? `Maximum character limit of ${EMAIL_MAX} reached.` : undefined}
+            >
               <input
-                className="input"
+                className={cn(
+                  "input transition-all",
+                  fEmail.length >= EMAIL_MAX && "border-bad/60 focus:border-bad focus:ring-bad/30"
+                )}
                 type="email"
                 autoComplete="email"
+                maxLength={EMAIL_MAX}
                 value={fEmail}
-                onChange={(e) => setFEmail(e.target.value)}
+                onChange={(e) => setFEmail(e.target.value.slice(0, EMAIL_MAX))}
                 placeholder="you@university.edu"
               />
             </Field>
