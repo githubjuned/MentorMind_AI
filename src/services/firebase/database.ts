@@ -12,35 +12,43 @@ export function sanitizeEmailKey(email: string): string {
 /**
  * Save complete student AppState to Firebase Realtime Database
  */
-export async function saveStudentStateToFirebase(state: AppState): Promise<boolean> {
+export async function saveStudentStateToFirebase(state: AppState, userUid?: string): Promise<boolean> {
   const email = state.session?.email || state.profile.email;
-  if (!email) return false;
+  const uid = userUid || state.session?.uid;
+  if (!email && !uid) return false;
 
-  const key = sanitizeEmailKey(email);
-  const studentRef = ref(rtdb, `students/${key}`);
+  const payload = {
+    profile: state.profile,
+    settings: state.settings,
+    subjects: state.subjects,
+    topics: state.topics,
+    tasks: state.tasks,
+    exams: state.exams,
+    sessions: state.sessions,
+    attempts: state.attempts,
+    notes: state.notes,
+    materials: state.materials,
+    goals: state.goals,
+    notifications: state.notifications,
+    revisions: state.revisions,
+    revisionHistory: state.revisionHistory,
+    mistakes: state.mistakes,
+    memory: state.memory,
+    activity: state.activity,
+    savedResources: state.savedResources,
+    updatedAt: new Date().toISOString(),
+  };
 
   try {
-    await set(studentRef, {
-      profile: state.profile,
-      settings: state.settings,
-      subjects: state.subjects,
-      topics: state.topics,
-      tasks: state.tasks,
-      exams: state.exams,
-      sessions: state.sessions,
-      attempts: state.attempts,
-      notes: state.notes,
-      materials: state.materials,
-      goals: state.goals,
-      notifications: state.notifications,
-      revisions: state.revisions,
-      revisionHistory: state.revisionHistory,
-      mistakes: state.mistakes,
-      memory: state.memory,
-      activity: state.activity,
-      savedResources: state.savedResources,
-      updatedAt: new Date().toISOString(),
-    });
+    if (uid) {
+      await set(ref(rtdb, `students/${uid}`), payload);
+    }
+    if (email) {
+      const emailKey = sanitizeEmailKey(email);
+      if (emailKey !== uid) {
+        await set(ref(rtdb, `students/${emailKey}`), payload);
+      }
+    }
     return true;
   } catch (error) {
     console.error("Firebase RTDB save error:", error);
@@ -51,16 +59,32 @@ export async function saveStudentStateToFirebase(state: AppState): Promise<boole
 /**
  * Fetch student AppState from Firebase Realtime Database
  */
-export async function getStudentStateFromFirebase(email: string): Promise<Partial<AppState> | null> {
-  if (!email) return null;
-  const key = sanitizeEmailKey(email);
-  const studentRef = ref(rtdb, `students/${key}`);
+export async function getStudentStateFromFirebase(
+  identifier: string,
+  fallbackEmail?: string
+): Promise<Partial<AppState> | null> {
+  if (!identifier && !fallbackEmail) return null;
 
   try {
-    const snapshot = await get(studentRef);
-    if (snapshot.exists()) {
-      return snapshot.val() as Partial<AppState>;
+    if (identifier) {
+      const directRef = ref(rtdb, `students/${identifier}`);
+      const snap = await get(directRef);
+      if (snap.exists()) return snap.val() as Partial<AppState>;
+
+      const sanitizedKey = sanitizeEmailKey(identifier);
+      if (sanitizedKey !== identifier) {
+        const emailRef = ref(rtdb, `students/${sanitizedKey}`);
+        const emailSnap = await get(emailRef);
+        if (emailSnap.exists()) return emailSnap.val() as Partial<AppState>;
+      }
     }
+
+    if (fallbackEmail) {
+      const emailRef = ref(rtdb, `students/${sanitizeEmailKey(fallbackEmail)}`);
+      const emailSnap = await get(emailRef);
+      if (emailSnap.exists()) return emailSnap.val() as Partial<AppState>;
+    }
+
     return null;
   } catch (error) {
     console.error("Firebase RTDB fetch error:", error);

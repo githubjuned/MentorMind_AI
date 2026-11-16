@@ -4,6 +4,14 @@ import type { ActivityItem, AppState, MemoryEvent, Notif, Profile, QuizAttempt, 
 import { DEMO_EMAIL, DEMO_PASSWORD, STORAGE_KEY, clearedLearning, createSeed } from "@/data/seed";
 import { addDays, sha256, todayStr, uid } from "@/utils";
 import { saveStudentStateToFirebase, getStudentStateFromFirebase } from "@/services/firebase/database";
+import {
+  signInWithGoogle,
+  loginWithEmail,
+  signUpWithEmail,
+  sendResetEmail,
+  logoutFirebase,
+  onFirebaseAuthStateChanged,
+} from "@/services/firebase/auth";
 
 interface Account { email: string; hash: string; profile: Profile }
 export interface SignupInput { name: string; email: string; password: string; department: string; year: string; institution: string; goals: string }
@@ -18,9 +26,10 @@ interface Ctx {
   addMemory: (kind: MemoryEvent["kind"], title: string, detail: string) => void;
   notify: (kind: Notif["kind"], title: string, body: string, href?: string) => void;
   login: (email: string, password: string, remember: boolean) => Promise<Result>;
+  loginGoogle: () => Promise<Result>;
   loginDemo: () => void;
   signup: (d: SignupInput) => Promise<Result>;
-  resetPassword: (email: string, password: string) => Promise<Result>;
+  resetPassword: (email: string, password?: string) => Promise<Result>;
   logout: () => void;
   resetDemo: () => void;
   clearProfile: () => void;
@@ -60,12 +69,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* quota exceeded */ }
-    if (state.session?.email) {
-      saveStudentStateToFirebase(state).catch((e) => {
+    if (state.session?.email || state.session?.uid) {
+      saveStudentStateToFirebase(state, state.session?.uid).catch((e) => {
         console.warn("Failed to sync to Firebase:", e);
       });
     }
   }, [state, ready]);
+
+  // Synchronize with Firebase Auth session
+  useEffect(() => {
+    const unsub = onFirebaseAuthStateChanged(async (fbUser) => {
+      if (fbUser) {
+        const email = (fbUser.email || "").toLowerCase();
+        const uid = fbUser.uid;
+        const photoURL = fbUser.photoURL || undefined;
+        const displayName = fbUser.displayName || "";
+
+        // Hydrate from Firebase RTDB if available
+        const remote = await getStudentStateFromFirebase(uid, email);
+        setState((current) => {
+          const base = remote ? { ...current, ...remote } : current;
+          return {
+            ...base,
+            session: { email, uid, photoURL },
+            profile: {
+              ...base.profile,
+              email: email || base.profile.email,
+              name: displayName || base.profile.name,
+              avatarImage: photoURL || base.profile.avatarImage,
+            },
+          };
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const apply = () => {
@@ -107,41 +145,145 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login: Ctx["login"] = useCallback(async (email, password, remember) => {
     const e = email.trim().toLowerCase();
     if (e === DEMO_EMAIL && password === DEMO_PASSWORD) { loginDemo(); return { ok: true }; }
-    const acc = readAccounts().find((a) => a.email === e);
-    if (!acc || acc.hash !== (await sha256(password))) return { ok: false, error: "Incorrect email or password." };
     startSession(remember);
-    setState((s) => {
-      if (s.profile.email.toLowerCase() === e) return { ...s, session: { email: e } };
-      const seed = createSeed();
-      return { ...seed, profile: acc.profile, onboarded: true, session: { email: e } };
-    });
-    return { ok: true };
+
+    // 1. Try Firebase Email/Password Sign-In
+    const fbRes = await loginWithEmail(e, password);
+    if (fbRes.ok && fbRes.user) {
+      const u = fbRes.user;
+      const remote = await getStudentStateFromFirebase(u.uid, e);
+      setState((s) => {
+        const seed = createSeed();
+        const base = remote ? { ...seed, ...remote } : { ...seed, profile: { ...seed.profile, email: e, name: u.displayName || s.profile.name } };
+        return {
+          ...base,
+          onboarded: true,
+          session: { email: e, uid: u.uid, photoURL: u.photoURL || undefined },
+          profile: { ...base.profile, email: e, name: u.displayName || base.profile.name },
+        };
+      });
+      return { ok: true };
+    }
+
+    // 2. Fallback to local accounts (for offline mode or local accounts)
+    const acc = readAccounts().find((a) => a.email === e);
+    if (acc && acc.hash === (await sha256(password))) {
+      setState((s) => {
+        if (s.profile.email.toLowerCase() === e) return { ...s, session: { email: e } };
+        const seed = createSeed();
+        return { ...seed, profile: acc.profile, onboarded: true, session: { email: e } };
+      });
+      return { ok: true };
+    }
+
+    return { ok: false, error: fbRes.error || "Incorrect email or password." };
   }, [loginDemo]);
+
+  const loginGoogle: Ctx["loginGoogle"] = useCallback(async () => {
+    startSession(true);
+    const fbRes = await signInWithGoogle();
+    if (!fbRes.ok || !fbRes.user) {
+      return { ok: false, error: fbRes.error || "Google sign-in could not be completed." };
+    }
+
+    const u = fbRes.user;
+    const e = (u.email || "").toLowerCase();
+    const remote = await getStudentStateFromFirebase(u.uid, e);
+
+    setState((s) => {
+      const seed = createSeed();
+      const base = remote ? { ...seed, ...remote } : seed;
+      const profile: Profile = {
+        ...base.profile,
+        name: u.displayName || base.profile.name || "Student",
+        email: e,
+        avatarImage: u.photoURL || undefined,
+      };
+
+      const newState: AppState = {
+        ...base,
+        profile,
+        onboarded: remote ? base.onboarded : true,
+        session: { email: e, uid: u.uid, photoURL: u.photoURL || undefined },
+      };
+
+      // Persist to Firebase Realtime Database
+      saveStudentStateToFirebase(newState, u.uid);
+      return newState;
+    });
+
+    return { ok: true };
+  }, []);
 
   const signup: Ctx["signup"] = useCallback(async (d) => {
     const e = d.email.trim().toLowerCase();
-    const accounts = readAccounts();
-    if (e === DEMO_EMAIL || accounts.some((a) => a.email === e)) return { ok: false, error: "An account with this email already exists." };
-    const seed = createSeed();
-    const profile: Profile = { ...seed.profile, name: d.name.trim(), email: e, department: d.department, year: d.year, institution: d.institution, goals: d.goals };
-    writeAccounts([...accounts, { email: e, hash: await sha256(d.password), profile }]);
     startSession(true);
-    setState({ ...seed, profile, onboarded: false, session: { email: e }, memory: [{ id: uid(), date: todayStr(), kind: "stored", title: "Profile created", detail: "Details from sign-up were saved on this device." }, ...seed.memory.slice(0, 0)] });
+
+    // 1. Create account with Firebase Auth
+    const fbRes = await signUpWithEmail(d.name, e, d.password);
+    if (!fbRes.ok) {
+      return { ok: false, error: fbRes.error || "Could not create account." };
+    }
+
+    const uidStr = fbRes.user?.uid;
+    const seed = createSeed();
+    const profile: Profile = {
+      ...seed.profile,
+      name: d.name.trim(),
+      email: e,
+      department: d.department,
+      year: d.year,
+      institution: d.institution,
+      goals: d.goals,
+    };
+
+    const newState: AppState = {
+      ...seed,
+      profile,
+      onboarded: false,
+      session: { email: e, uid: uidStr },
+      memory: [
+        {
+          id: uid(),
+          date: todayStr(),
+          kind: "stored",
+          title: "Profile created",
+          detail: "Account created and synced to Firebase.",
+        },
+      ],
+    };
+
+    // Save to Firebase RTDB
+    await saveStudentStateToFirebase(newState, uidStr);
+
+    // Also cache locally
+    const accounts = readAccounts();
+    writeAccounts([...accounts.filter((a) => a.email !== e), { email: e, hash: await sha256(d.password), profile }]);
+
+    setState(newState);
     return { ok: true };
   }, []);
 
   const resetPassword: Ctx["resetPassword"] = useCallback(async (email, password) => {
     const e = email.trim().toLowerCase();
+    const fbRes = await sendResetEmail(e);
+    if (fbRes.ok) {
+      return { ok: true };
+    }
+    // Fallback to local accounts if email doesn't exist in Firebase
     const accounts = readAccounts();
     const acc = accounts.find((a) => a.email === e);
-    if (!acc) return { ok: false, error: "No account found with that email on this device." };
-    acc.hash = await sha256(password);
-    writeAccounts(accounts);
-    return { ok: true };
+    if (acc && password) {
+      acc.hash = await sha256(password);
+      writeAccounts(accounts);
+      return { ok: true };
+    }
+    return { ok: false, error: fbRes.error || "Could not send password reset email." };
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     sessionStorage.removeItem("mm-alive");
+    await logoutFirebase();
     setState((s) => ({ ...s, session: null }));
   }, []);
 
@@ -234,7 +376,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [update]);
 
   return (
-    <AppCtx.Provider value={{ state, ready, update, addActivity, addSession, addMemory, notify, login, loginDemo, signup, resetPassword, logout, resetDemo, clearProfile, toggleTask, finishQuiz, addRevision, completeRevision }}>
+    <AppCtx.Provider value={{ state, ready, update, addActivity, addSession, addMemory, notify, login, loginGoogle, loginDemo, signup, resetPassword, logout, resetDemo, clearProfile, toggleTask, finishQuiz, addRevision, completeRevision }}>
       {children}
     </AppCtx.Provider>
   );

@@ -2,10 +2,9 @@
   "rules": {
     "students": {
       "$studentId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth != null || $studentId == 'demo-student'",
+        ".write": "auth != null || $studentId == 'demo-student'"
       }
     }
   }
 }
-

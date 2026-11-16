@@ -253,7 +253,7 @@ export interface Settings {
 
 export interface AppState {
   version: number;
-  session: { email: string } | null;
+  session: { email: string; uid?: string; photoURL?: string } | null;
   onboarded: boolean;
   isSample: boolean;
   profile: Profile;

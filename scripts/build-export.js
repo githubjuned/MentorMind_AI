@@ -24,3 +24,4 @@ try {
     fs.renameSync(tempPath, apiPath);
   }
 }
+
